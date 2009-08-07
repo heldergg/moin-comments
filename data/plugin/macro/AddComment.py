@@ -42,6 +42,8 @@ class AddComment:
     def __init__(self, macro, header=u'', button_label=u''):
         self.macro = macro
         self.request = macro.request
+
+        print self.request.cfg.comment_approval_page
         self.formatter = macro.formatter
         if header:
             self.header = header

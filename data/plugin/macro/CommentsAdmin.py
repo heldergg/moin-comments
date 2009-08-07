@@ -46,26 +46,16 @@ from string import split, replace
 # MoinMoin imports:
 from MoinMoin import user
 
-# Get the configuration values
-conf = {}
-current_dir =  os.path.dirname(__file__)
-conf_file = os.path.join(current_dir, 'comments_config.txt')
-
-data = open(conf_file, 'r')
-lines = data.readlines()
-data.close()
-for line in lines:
-    line = replace(line, '\n', '')
-    line = split(line, '==')
-    conf[line[0]]=line[1]
-
-pages_dir = os.path.join(os.path.split(os.path.split(current_dir)[0])[0], 'pages')
-APPROVAL_DIR = os.path.join(pages_dir, conf['APPROVAL_PAGE'])
-
 def CommentsAdmin(request, header_text):
     """
     Providing the link to the approval page in any place the user sees fit.
     """
+
+    # Configuration:
+    PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
+    APPROVAL_PAGE = request.cfg.comment_approval_page
+    APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
+
     formatter = request.html_formatter
     html = ''
 
@@ -79,7 +69,7 @@ def CommentsAdmin(request, header_text):
 
         html += u"""
     <a href="%s">Aprovar Comentários (%s)</a>
-        """ % (conf['APPROVAL_PAGE'], total_waiting)
+        """ % (APPROVAL_PAGE, total_waiting)
 
     return formatter.rawHTML(html)
 

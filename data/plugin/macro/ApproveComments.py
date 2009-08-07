@@ -42,27 +42,16 @@ import os
 from string import split, replace
 import glob
 
-# Get the configuration values
-conf = {}
-current_dir =  os.path.dirname(__file__)
-conf_file = os.path.join(current_dir, 'comments_config.txt')
-
-data = open(conf_file, 'r')
-lines = data.readlines()
-data.close()
-for line in lines:
-    line = replace(line, '\n', '')
-    line = split(line, '==')
-    conf[line[0]]=line[1]
-
-pages_dir = os.path.join(os.path.split(os.path.split(current_dir)[0])[0], 'pages')
-APPROVAL_DIR = os.path.join(pages_dir, conf['APPROVAL_PAGE'])
-
 # Auxiliary function:
 def ApproveComments(request):
     """
     Render comments form in page context.
     """
+    # Configuration:
+    PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
+    APPROVAL_PAGE = request.cfg.comment_approval_page
+    APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
+
     formatter = request.html_formatter
     html = ''
 

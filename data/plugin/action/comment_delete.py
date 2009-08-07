@@ -37,28 +37,16 @@ from string import replace, split
 # MoinMoin imports:
 from MoinMoin.Page import Page
 
-# Get the configuration values
-conf = {}
-current_dir =  os.path.dirname(__file__)
-config_dir = os.path.join(os.path.split(current_dir)[0], 'macro')
-conf_file = os.path.join(config_dir, 'comments_config.txt')
-
-data = open(conf_file, 'r')
-lines = data.readlines()
-data.close()
-for line in lines:
-    line = replace(line, '\n', '')
-    line = split(line, '==')
-    conf[line[0]]=line[1]
-
-pages_dir = os.path.join(os.path.split(os.path.split(current_dir)[0])[0], 'pages')
-APPROVAL_DIR = os.path.join(pages_dir, conf['APPROVAL_PAGE'])
-
 class CommentDelete:
     """
     Aapproves a comment
     """
     def __init__(self, request, referrer):
+        # Configuration:
+        PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
+        APPROVAL_PAGE = request.cfg.comment_approval_page
+        self.APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
+
         self.request = request
         self.referrer = referrer
         self.file = self.request.form.get('file', [None])[0]
@@ -68,7 +56,7 @@ class CommentDelete:
         Deletes comment and redirects to the approval page with success message
         """
         # deletes the file text
-        os.remove(os.path.join(APPROVAL_DIR, self.file))
+        os.remove(os.path.join(self.APPROVAL_DIR, self.file))
 
         # Return Approval page with success message
         msg = u'Comentário Apagado'

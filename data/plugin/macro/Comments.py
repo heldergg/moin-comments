@@ -41,28 +41,16 @@ from string import replace, split, letters, digits
 import glob
 from random import choice
 
-# Get the configuration values
-conf = {}
-current_dir =  os.path.dirname(__file__)
-conf_file = os.path.join(current_dir, 'comments_config.txt')
-
-data = open(conf_file, 'r')
-lines = data.readlines()
-data.close()
-for line in lines:
-    line = replace(line, '\n', '')
-    line = split(line, '==')
-    conf[line[0]]=line[1]
-
-PAGES_DIR = os.path.join(os.path.split(os.path.split(current_dir)[0])[0], 'pages')
-DISPLAY_NUMBER = int(conf['DISPLAY_NUMBER'])
-OVERLAP_NUMBER = int(conf['OVERLAP_NUMBER'])
-
 # Auxiliary function:
 def Comments(request, pagename):
     """
     Returns comments in page context.
     """
+    # Get the configuration:
+    DISPLAY_NUMBER = request.cfg.comment_display_number
+    OVERLAP_NUMBER = request.cfg.comment_overlap_number
+    PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
+
     formatter = request.html_formatter
     html = ''
 
@@ -72,7 +60,7 @@ def Comments(request, pagename):
     comments_dir = os.path.join(PAGES_DIR, pagename, 'comments')
 
     if not os.path.exists(comments_dir):
-            os.mkdir(comments_dir)
+        os.mkdir(comments_dir)
 
     files = glob.glob('%s/*.txt' % comments_dir)
 

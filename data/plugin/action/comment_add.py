@@ -47,30 +47,18 @@ from MoinMoin import config
 from MoinMoin.Page import Page
 from MoinMoin import wikiutil
 
-# Get the configuration values
-conf = {}
-current_dir =  os.path.dirname(__file__)
-config_dir = os.path.join(os.path.split(current_dir)[0], 'macro')
-conf_file = os.path.join(config_dir, 'comments_config.txt')
-
-data = open(conf_file, 'r')
-lines = data.readlines()
-data.close()
-for line in lines:
-    line = replace(line, '\n', '')
-    line = split(line, '==')
-    conf[line[0]]=line[1]
-
-pages_dir = os.path.join(os.path.split(os.path.split(current_dir)[0])[0], 'pages')
-APPROVAL_DIR = os.path.join(pages_dir, conf['APPROVAL_PAGE'])
-
 class AddComment:
     """
     Add a comment to the approval list.
     """
     def __init__(self, request, referrer):
-        self.request = request
 
+        # Configuration:
+        PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
+        APPROVAL_PAGE = request.cfg.comment_approval_page
+        self.APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
+
+        self.request = request
         self.page = self.request.form.get('page', [None])[0]
         self.user_name = wikiutil.escape(
                             self.request.form.get('user_name', [None])[0] )
@@ -106,7 +94,7 @@ class AddComment:
                 self.user_name,
                 self.comment)
 
-        file = open(os.path.join(APPROVAL_DIR, comment_file), 'wb')
+        file = open(os.path.join(self.APPROVAL_DIR, comment_file), 'wb')
         file.write(info.encode('utf-8'))
         file.close()
 

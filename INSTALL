@@ -1,0 +1,8 @@
+= Configuration =
+
+You have to define on your wiki configuration the following options:
+
+comment_approval_page = 'CommentsApproval'
+comment_display_number = 2
+momment_overlap_number = 2
+
