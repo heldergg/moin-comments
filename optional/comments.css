@@ -1,0 +1,68 @@
+/********************************/
+/* Comments Macro CSS           */
+/* By José Lopes - Bombolom.com */
+
+.comments_form {}
+
+.comments_form th, td {
+    background-color: transparent !important;
+    border-style: none !important;
+    padding-top: .3em;
+    vertical-align: top;
+    font-size: 100% !important;
+    }
+
+.comments_form th {
+    text-align: right;
+    padding-right: .4em;
+    color: #746608;
+    }
+
+.comments_form td#center_cell {
+    text-align: center;
+    }
+
+.comments_form input#name {
+    width: 350px;
+    }
+
+.comments_form input#name:focus {
+    background-color: #FFFBE8 !important;
+    }
+
+.comments_form textarea {
+    width: 350px;
+    height: 15em;
+    font-family: DejaVu Sans, Droid Sans, Verdana, sans-serif !important;
+    font-size: 100% !important;
+    }
+
+.comments_form textarea:focus{
+    background-color: #FFFBE8 !important;
+    }
+
+/* To display the comment */
+
+#comment_header {
+    background-color: #FFFBE8 !important;
+    }
+
+/* For the Approval Page */
+.comment_approval form {
+    display: inline;
+    padding-left: 10px;
+    }
+
+.comment_approval table {
+    width: 98%;
+    }
+
+.comment_approval input#delete {
+    color: #800000;
+    background-color: #DB9AA0;
+    }
+
+.comment_approval input#ok {
+    color: green;
+    background-color: #d5ffc7;
+    }
