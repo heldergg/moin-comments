@@ -1,8 +1,22 @@
-= Configuration =
+= Installation =
+
+First checkout the latest version from the repository:
+
+$ svn checkout http://moin-comments.googlecode.com/svn/trunk/ moin-comments-read-only
+
+Next you have to copy the actions and macros to the appropriate directory. Find out what's your ''data_dir'' and:
+
+$ cp moin-comments-read-only/data/plugin/action/* <data_dir>/plugin/action/
+$ cp moin-comments-read-only/data/plugin/macro/* <data_dir>/plugin/macro/
+
+Under the ''moin-comments-read-only/optional'' you have a cascading style sheet that you may use with moin-comments. If you choose to do so you must copy it to a web accessible place and make it available on the pages that have comments, and comment forms. If you are planning to have comments on most pages you can just include it in the general CSS.
+
+== Configuration ==
 
 You have to define on your wiki configuration the following options:
 
 comment_approval_page = 'CommentsApproval'
 comment_display_number = 2
-momment_overlap_number = 2
+comment_overlap_number = 2
 
+$Id$
