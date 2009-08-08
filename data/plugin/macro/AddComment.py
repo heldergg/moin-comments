@@ -37,7 +37,6 @@ Usage:
 # MoinMoin imports:
 from MoinMoin import wikiutil
 
-
 # Auxiliary class:
 class AddComment:
     def __init__(self, macro, header=u'', button_label=u''):
@@ -54,6 +53,14 @@ class AddComment:
             self.label = button_label
         else:
             self.label = u'Enviar Comentário'
+
+        # If there where errors we've to redisplay the user input:
+        self.user_name = wikiutil.escape(
+                            self.request.form.get('user_name', [""])[0] )
+        self.comment = wikiutil.escape(
+                            self.request.form.get('comment', [""])[0] )
+        self.email = wikiutil.escape(
+                            self.request.form.get('email', [""])[0] )
 
     def renderInPage(self):
         """
@@ -74,18 +81,20 @@ class AddComment:
             <tr>
                 <th>Nome:</th>
                 <td>
-                    <input type="text" id="name" name="user_name">
+                    <input type="text" id="name" name="user_name" value="%(user_name)s">
                 </td>
             </tr>
             <tr>
                 <th>Comentário:</th>
                 <td>
-                    <textarea name="comment"></textarea>
+                    <textarea name="comment">%(comment)s</textarea>
                 </td>
             </tr>
             """ % {
         'page_name':wikiutil.quoteWikinameURL(self.formatter.page.page_name),
-        'header': wikiutil.escape(self.header, 1) }
+        'header': wikiutil.escape(self.header, 1),
+        'user_name': self.user_name,
+        'comment': self.comment  }
 
         if self.request.cfg.comment_recaptcha:
             import captcha

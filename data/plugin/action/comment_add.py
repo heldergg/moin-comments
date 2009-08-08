@@ -120,8 +120,11 @@ class AddComment:
             self.request.theme.add_msg(error, "error")
             page.send_page()
         else:
-
             self.write_comment_for_approval()
+
+            self.request.form['user_name'] = ['']
+            self.request.form['comment'] = ['']
+            self.request.form['email'] = ['']
 
             pagename = '%s' % self.page
             msg = u'O seu comentário aguarda moderação'
