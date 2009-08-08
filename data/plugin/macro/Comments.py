@@ -26,7 +26,6 @@
 
 """
 Comments Macro
-By José Lopes - Bombolom.com
 
 This macro display the comments page.
 It collects the comments files and displays its content.

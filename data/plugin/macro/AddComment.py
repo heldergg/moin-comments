@@ -37,14 +37,14 @@ Usage:
 # MoinMoin imports:
 from MoinMoin import wikiutil
 
+
 # Auxiliary class:
 class AddComment:
     def __init__(self, macro, header=u'', button_label=u''):
         self.macro = macro
         self.request = macro.request
-
-        print self.request.cfg.comment_approval_page
         self.formatter = macro.formatter
+
         if header:
             self.header = header
         else:
@@ -63,13 +63,13 @@ class AddComment:
         html = u"""
 <center>
 <div class="comments_form">
-    <form method="POST" action="%s">
+    <form method="POST" action="%(page_name)s">
         <input type="hidden" name="action" value="comment_add">
-        <input type="hidden" name="page" value="%s">
+        <input type="hidden" name="page" value="%(page_name)s">
         <table>
              <tr>
                 <td></td>
-                <td id="center_cell"><b>%s</b></td>
+                <td id="center_cell"><b>%(header)s</b></td>
             </tr>
             <tr>
                 <th>Nome:</th>
@@ -83,18 +83,31 @@ class AddComment:
                     <textarea name="comment"></textarea>
                 </td>
             </tr>
+            """ % {
+        'page_name':wikiutil.quoteWikinameURL(self.formatter.page.page_name),
+        'header': wikiutil.escape(self.header, 1) }
+
+        if self.request.cfg.comment_recaptcha:
+            import captcha
+            html += u"""
             <tr>
+                <th>Você é humano?</th>
+                <td>
+                    %s
+                </td>
+            </tr>""" % captcha.displayhtml(
+                                self.request.cfg.comment_recaptcha_public_key )
+
+        html += """
+             <tr>
                 <td></td>
-                <td id="center_cell"><input type="submit" value="%s"></td>
+                <td id="center_cell"><input type="submit" value="%(label)s">
+                </td>
             </tr>
         </table>
     </form>
 </div>
-</center>
-                """ % (wikiutil.quoteWikinameURL(self.formatter.page.page_name),
-                    wikiutil.quoteWikinameURL(self.formatter.page.page_name),
-                    wikiutil.escape(self.header, 1),
-                    wikiutil.escape(self.label, 1))
+</center>""" % { 'label': wikiutil.escape(self.label, 1) }
 
         return self.formatter.rawHTML(html)
 

@@ -26,7 +26,6 @@
 
 """
 Action Add Comment
-By José Lopes - Bombolom.com
 
 This action creates a new comment from the form passed by the
 AddComments macro, and saves it under the APPROVAL_PAGE.
@@ -67,6 +66,13 @@ class AddComment:
         self.email = wikiutil.escape(
                             self.request.form.get('email', [None])[0] )
         self.date = datetime.now()
+        if request.cfg.comment_recaptcha:
+            import captcha
+            self.captcha = captcha.submit (
+                self.request.form.get('recaptcha_challenge_field', [None])[0],
+                self.request.form.get('recaptcha_response_field', [None])[0],
+                request.cfg.comment_recaptcha_private_key,
+                request.remote_addr )
 
     def errors_check(self):
         """
@@ -76,6 +82,9 @@ class AddComment:
             return u'O seu nome é obrigatório'
         if not self.comment:
             return u'Ainda não escreveu qualquer comentário'
+        if ( self.request.cfg.comment_recaptcha and
+            not self.captcha.is_valid ):
+            return u'Não tenho a certeza que seja humano!'
         return ''
 
     def write_comment_for_approval(self):
@@ -87,7 +96,8 @@ class AddComment:
 
         comment_hash =  ''.join([choice(letters + digits) for i in range(20)])
 
-        comment_file = '%s-%s%s.txt' % (page_ref, int(moment.strftime("%s")), comment_hash)
+        comment_file = '%s-%s%s.txt' % (page_ref, int(moment.strftime("%s")),
+                    comment_hash)
 
         info = u"""<p id="comment_header">%s - Por <b>%s</b><p>%s</p>""" % (
                 moment.strftime("%d-%m-%Y %H:%M:%S"),
