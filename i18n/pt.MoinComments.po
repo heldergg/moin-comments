@@ -1,0 +1,115 @@
+#  Tradução do sistema de macros para termos comentários tipo blog no MoinMoin
+# Copyright (C) 2009 José Lopes
+# This file is distributed under the same license as the Moin-Comment package.
+# José Lopes <zeca1973@gmail.com>, 2009.
+# Helder Guerreiro <hguerreiro@gmail.com>, 2009.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SVN_r10\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-08-09 17:10+0100\n"
+"PO-Revision-Date: 2009-08-09 17:10+0100\n"
+"Last-Translator: Helder Guerreiro <hguerreiro@gmail.com>\n"
+"Language-Team: Helder Guerreiro <hguerreiro@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: data/plugin/action/comment_approve.py:80
+#: ../data/plugin/action/comment_approve.py:80
+msgid "Comment approved"
+msgstr "Comentário aprovado "
+
+#: data/plugin/action/comment_add.py:80
+#: ../data/plugin/action/comment_add.py:80
+msgid "You must enter your name."
+msgstr "Tem de introduzir o seu nome."
+
+#: data/plugin/action/comment_add.py:82
+#: ../data/plugin/action/comment_add.py:82
+msgid "You have yet to write your comment."
+msgstr "Tem de escrever um comentário."
+
+#: data/plugin/action/comment_add.py:85
+#: ../data/plugin/action/comment_add.py:85
+msgid "I'm not sure you're human! Please fill in the captcha."
+msgstr "Não tenho a certeza que seja humano. Por favor preencha a captcha."
+
+#: data/plugin/action/comment_add.py:105
+#: ../data/plugin/action/comment_add.py:105
+msgid "Comment by"
+msgstr "Comentário por"
+
+#: data/plugin/action/comment_add.py:130
+#: ../data/plugin/action/comment_add.py:130
+msgid "Your comment awaits moderation"
+msgstr "O seu comentário está à espera de ser moderado."
+
+#: data/plugin/action/comment_delete.py:63
+#: ../data/plugin/action/comment_delete.py:63
+msgid "Comment deleted"
+msgstr "COmentário apagado"
+
+#: data/plugin/macro/AddComment.py:52 ../data/plugin/macro/AddComment.py:52
+msgid "Comment this page"
+msgstr "Comente esta página"
+
+#: data/plugin/macro/AddComment.py:57 ../data/plugin/macro/AddComment.py:57
+msgid "Send comment"
+msgstr "Enviar comentário"
+
+#: data/plugin/macro/AddComment.py:101 ../data/plugin/macro/AddComment.py:101
+msgid "Name:"
+msgstr "Nome:"
+
+#: data/plugin/macro/AddComment.py:102 ../data/plugin/macro/AddComment.py:102
+msgid "Comment:"
+msgstr "Comentário:"
+
+#: data/plugin/macro/AddComment.py:116 ../data/plugin/macro/AddComment.py:116
+msgid "Are you human?"
+msgstr "É humano?"
+
+#: data/plugin/macro/Comments.py:69 ../data/plugin/macro/Comments.py:69
+msgid "There are no comments"
+msgstr "Não existem comentários"
+
+#: data/plugin/macro/Comments.py:105 ../data/plugin/macro/Comments.py:105
+#, python-format
+msgid "Show/Hide the next %s comments"
+msgstr "Mostrar/Esconder os próximos %s comentários"
+
+#: data/plugin/macro/CommentsAdmin.py:72
+#: ../data/plugin/macro/CommentsAdmin.py:72
+msgid "Pending Comments"
+msgstr "Comentários em espera"
+
+#: data/plugin/macro/ApproveComments.py:63
+#: ../data/plugin/macro/ApproveComments.py:63
+msgid "There's no comment awaiting for moderation."
+msgstr "Não há comentários à espera de moderação"
+
+#: data/plugin/macro/ApproveComments.py:116
+#: data/plugin/macro/ApproveComments.py:145
+#: ../data/plugin/macro/ApproveComments.py:116
+#: ../data/plugin/macro/ApproveComments.py:145
+msgid "Delete"
+msgstr "Apagar"
+
+#: data/plugin/macro/ApproveComments.py:117
+#: ../data/plugin/macro/ApproveComments.py:117
+msgid "Accept"
+msgstr "Aceitar"
+
+#: data/plugin/macro/ApproveComments.py:118
+#: data/plugin/macro/ApproveComments.py:144
+#: ../data/plugin/macro/ApproveComments.py:118
+#: ../data/plugin/macro/ApproveComments.py:144
+msgid "Comment to"
+msgstr "Comentário para"
+
+#: data/plugin/macro/ApproveComments.py:141
+#: ../data/plugin/macro/ApproveComments.py:141
+msgid "Empty comment, it should be deleted."
+msgstr "Comentário vazio, deveria ser apagado."

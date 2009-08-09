@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Generate po files
+
+# Usage:
+#    generate_po <lang>.po
+
+GETTEXTARGS=""
+if [ -f $1 ]
+then
+  GETTEXTARGS="--join-existing"
+fi
+
+find .. -iname "*.py" | xargs xgettext --language=Python $GETTEXTARGS --output=$1
