@@ -58,6 +58,7 @@ class CommentApprove:
         """
         Approves comment and redirects to the approval page with success message
         """
+        _ = self.request.getText
         # Move the file text
         origin = os.path.join(self.APPROVAL_DIR, self.file)
 
@@ -76,7 +77,7 @@ class CommentApprove:
         os.rename(origin, destination)
 
         # Return Approval page with success message
-        msg = u'Comentário Approvado'
+        msg = _('Comment approved')
 
         page = Page(self.request, self.referrer)
         self.request.theme.add_msg(msg, "dialog")

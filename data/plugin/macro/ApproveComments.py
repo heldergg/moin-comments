@@ -47,6 +47,8 @@ def ApproveComments(request):
     """
     Render comments form in page context.
     """
+    _ = request.getText
+
     # Configuration:
     PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
     APPROVAL_PAGE = request.cfg.comment_approval_page
@@ -58,7 +60,7 @@ def ApproveComments(request):
     files = glob.glob('%s/*.txt' % APPROVAL_DIR)
 
     if not files:
-        html = u'<p>Não existe nenhum comentário à espera de moderação</p>'
+        html = u'<p>%s</p>' % _("There's no comment awaiting for moderation.")
     else:
         # Organize files by page
         info = {}
@@ -85,49 +87,60 @@ def ApproveComments(request):
 <div class="comment_approval">
 <table>
     <tr>
-        <th>Comentário a %s</th>
+        <th>%(intro)s %(page_name)s</th>
     </tr>
     <tr>
-        <td>%s</td>
+        <td>%(comment_text)s</td>
     </tr>
     <tr>
         <td>
             <form method="POST" action="/CommentsApproval">
             <input type="hidden" name="action" value="comment_delete">
-            <input type="submit" value="Apagar" id="delete">
-            <input type="hidden" name="file" value="%s-%s">
+            <input type="submit" value="%(button_delete)s" id="delete">
+            <input type="hidden" name="file" value="%(key_comment)s">
             </form>
             <form method="POST" action="/CommentsApproval">
             <input type="hidden" name="action" value="comment_approve">
-            <input type="submit" value="Aceitar" id="ok">
-            <input type="hidden" name="file" value="%s-%s">
+            <input type="submit" value="%(button_accept)s" id="ok">
+            <input type="hidden" name="file" value="%(key_comment)s">
             </form>
         </td>
     </tr>
 </table>
 </div><br />
-            """ % (replace(key,'_','\\'), lines, key, comment, key, comment)
+            """ % {
+                'page_name': replace(key,'_','\\'),
+                'comment_text': lines,
+                'key_comment': u'%s-%s' % (key, comment),
+                'button_delete': _('Delete'),
+                'button_accept': _('Accept'),
+                'intro': _('Comment to') }
 
                 else: # If the file is empty:
                     html += u"""
 <div class="comment_approval">
 <table>
     <tr>
-        <th colspan=2>Comentário a %s</th>
+        <th colspan=2>%(intro)s %(page_name)s</th>
     </tr>
     <tr>
-        <td>Comentário vazio. Deve ser apagado!</td>
+        <td>%(error)s</td>
         <td>
             <form method="POST" action="/CommentsApproval">
             <input type="hidden" name="action" value="comment_delete">
-            <input type="submit" value="Apagar">
-            <input type="hidden" name="file" value="%s-%s">
+            <input type="submit" value="%(button_delete)s">
+            <input type="hidden" name="file" value="%(key_comment)s">
             </form>
         </td>
     </tr>
 </table>
 </div><br />
-            """ % (replace(key,'_','\\'), key, comment)
+            """ % {
+                'error': _('Empty comment, it should be deleted.'),
+                'page_name': replace(key,'_','\\'),
+                'key_comment': u'%s-%s' % (key, comment),
+                'intro': _('Comment to'),
+                'button_delete': _('Delete') }
 
     return formatter.rawHTML(html)
 

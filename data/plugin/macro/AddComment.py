@@ -44,15 +44,17 @@ class AddComment:
         self.request = macro.request
         self.formatter = macro.formatter
 
+        _ = self.request.getText
+
         if header:
             self.header = header
         else:
-            self.header = u'Comentar esta página'
+            self.header = _('Comment this page')
 
         if button_label:
             self.label = button_label
         else:
-            self.label = u'Enviar Comentário'
+            self.label = _('Send comment')
 
         # If there where errors we've to redisplay the user input:
         self.user_name = wikiutil.escape(
@@ -66,6 +68,7 @@ class AddComment:
         """
         Render comments form in page context.
         """
+        _ = self.request.getText
 
         html = u"""
 <center>
@@ -79,13 +82,13 @@ class AddComment:
                 <td id="center_cell"><b>%(header)s</b></td>
             </tr>
             <tr>
-                <th>Nome:</th>
+                <th>%(name_label)s</th>
                 <td>
                     <input type="text" id="name" name="user_name" value="%(user_name)s">
                 </td>
             </tr>
             <tr>
-                <th>Comentário:</th>
+                <th>%(comment_label)s</th>
                 <td>
                     <textarea name="comment">%(comment)s</textarea>
                 </td>
@@ -94,18 +97,23 @@ class AddComment:
         'page_name':wikiutil.quoteWikinameURL(self.formatter.page.page_name),
         'header': wikiutil.escape(self.header, 1),
         'user_name': self.user_name,
-        'comment': self.comment  }
+        'comment': self.comment,
+        'name_label': _('Name:'),
+        'comment_label': _('Comment:')  }
 
         if self.request.cfg.comment_recaptcha:
             import captcha
             html += u"""
             <tr>
-                <th>Você é humano?</th>
+                <th>%(recaptcha_label)s</th>
                 <td>
-                    %s
+                    %(recaptcha)s
                 </td>
-            </tr>""" % captcha.displayhtml(
-                                self.request.cfg.comment_recaptcha_public_key )
+            </tr>""" % {
+
+            'recaptcha' : captcha.displayhtml(
+                                self.request.cfg.comment_recaptcha_public_key ),
+            'recaptcha_label': _('Are you human?') }
 
         html += """
              <tr>

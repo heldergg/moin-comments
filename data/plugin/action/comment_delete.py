@@ -55,11 +55,12 @@ class CommentDelete:
         """
         Deletes comment and redirects to the approval page with success message
         """
+        _ = self.request.getText
         # deletes the file text
         os.remove(os.path.join(self.APPROVAL_DIR, self.file))
 
         # Return Approval page with success message
-        msg = u'Comentário Apagado'
+        msg = _('Comment deleted')
 
         page = Page(self.request, self.referrer)
         self.request.theme.add_msg(msg, "dialog")

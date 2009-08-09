@@ -50,7 +50,7 @@ def CommentsAdmin(request, header_text):
     """
     Providing the link to the approval page in any place the user sees fit.
     """
-
+    _ = request.getText
     # Configuration:
     PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
     APPROVAL_PAGE = request.cfg.comment_approval_page
@@ -68,8 +68,8 @@ def CommentsAdmin(request, header_text):
         total_waiting = len(files)
 
         html += u"""
-    <a href="%s">Aprovar Comentários (%s)</a>
-        """ % (APPROVAL_PAGE, total_waiting)
+    <a href="%s">%s (%s)</a>
+        """ % ( APPROVAL_PAGE,_('Pending Comments'), total_waiting)
 
     return formatter.rawHTML(html)
 

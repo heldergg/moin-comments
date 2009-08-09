@@ -78,19 +78,22 @@ class AddComment:
         """
         Check the form for errors.
         """
+        _ = self.request.getText
+
         if not self.user_name:
-            return u'O seu nome é obrigatório'
+            return _('You must enter your name.')
         if not self.comment:
-            return u'Ainda não escreveu qualquer comentário'
+            return _('You have yet to write your comment.')
         if ( self.request.cfg.comment_recaptcha and
             not self.captcha.is_valid ):
-            return u'Não tenho a certeza que seja humano!'
+            return _("I'm not sure you're human! Please fill in the captcha." )
         return ''
 
     def write_comment_for_approval(self):
         """
         Writes the comment to the approval directory for evaluation.
         """
+        _ = self.request.getText
         moment = self.date
         page_ref = replace(self.page, '/', '_')
 
@@ -99,10 +102,11 @@ class AddComment:
         comment_file = '%s-%s%s.txt' % (page_ref, int(moment.strftime("%s")),
                     comment_hash)
 
-        info = u"""<p id="comment_header">%s - Por <b>%s</b><p>%s</p>""" % (
-                moment.strftime("%d-%m-%Y %H:%M:%S"),
-                self.user_name,
-                self.comment)
+        info = '<p id="comment_header">%(time)s - %(by)s <b>%(user_name)s</b><p>%(comment)s</p>' % {
+                'time': moment.strftime("%d-%m-%Y %H:%M:%S"),
+                'user_name': self.user_name,
+                'comment': self.comment,
+                'by': _('Comment by') }
 
         file = open(os.path.join(self.APPROVAL_DIR, comment_file), 'wb')
         file.write(info.encode('utf-8'))
@@ -113,6 +117,7 @@ class AddComment:
         Redirect to the comment page if success.
         """
         error = self.errors_check()
+        _ = self.request.getText
 
         if error:
             # Send back to the page you came from, with an error msg
@@ -127,7 +132,7 @@ class AddComment:
             self.request.form['email'] = ['']
 
             pagename = '%s' % self.page
-            msg = u'O seu comentário aguarda moderação'
+            msg = _('Your comment awaits moderation')
 
             page = Page(self.request, pagename)
             self.request.theme.add_msg(msg, "dialog")

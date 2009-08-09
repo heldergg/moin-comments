@@ -45,6 +45,8 @@ def Comments(request, pagename):
     """
     Returns comments in page context.
     """
+    _ = request.getText
+
     # Get the configuration:
     DISPLAY_NUMBER = request.cfg.comment_display_number
     OVERLAP_NUMBER = request.cfg.comment_overlap_number
@@ -64,9 +66,7 @@ def Comments(request, pagename):
     files = glob.glob('%s/*.txt' % comments_dir)
 
     if not files:
-        html = u"""
-<p>Não existe nenhum comentário</p>
-        """
+        html = u'<p>%s</p>' % _('There are no comments')
 
     else:
         # Get the file names
@@ -98,9 +98,11 @@ def Comments(request, pagename):
             # To avoid display problems if macro is used several times in the same page.
             div_id = ''.join([choice(letters + digits) for i in range(3)])
 
-            html += u"""
-<a href="#" onClick = showAndHide('%s')>Mostar / Esconder os restantes %s comentários</a>
-<div id='%s' style="display:none"><br />""" % (div_id, len(hidden_comments), div_id)
+            html += u"""<a href="#" onClick = showAndHide('%(div_id)s')>
+            %(msg)s</a>
+            <div id='%(div_id)s' style="display:none"><br />""" % {
+                'div_id': div_id,
+                'msg': _('Show/Hide the next %s comments'%len(hidden_comments))}
 
             for comment in hidden_comments:
                 data = open(os.path.join(comments_dir, comment), 'r')
@@ -112,7 +114,7 @@ def Comments(request, pagename):
 
             # Place the javascript to hide and show the comments
             # NOTE: If used more than one time in the same page this part is repeated,
-            # no problem about it but its not the best HTML code.
+            # it should work but it's not the best HTML code.
             html += u"""
 <script language="JavaScript">
 function showAndHide(theId)
