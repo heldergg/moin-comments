@@ -73,7 +73,7 @@ class AddComment:
         html = u"""
 <center>
 <div class="comments_form">
-    <form method="POST" action="%(page_name)s">
+    <form method="POST" action="/%(page_name)s">
         <input type="hidden" name="action" value="comment_add">
         <input type="hidden" name="page" value="%(page_name)s">
         <table>

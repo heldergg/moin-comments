@@ -29,10 +29,6 @@ Action Add Comment
 
 This action creates a new comment from the form passed by the
 AddComments macro, and saves it under the APPROVAL_PAGE.
-
-Mandatory:
-    - The APPROVAL_PAGE must exist and be declared on the constants
-    - The Comments page must exist for the page in question
 """
 
 # General imports:
@@ -131,10 +127,9 @@ class AddComment:
             self.request.form['comment'] = ['']
             self.request.form['email'] = ['']
 
-            pagename = '%s' % self.page
             msg = _('Your comment awaits moderation')
 
-            page = Page(self.request, pagename)
+            page = Page(self.request, self.page)
             self.request.theme.add_msg(msg, "dialog")
             page.send_page()
 

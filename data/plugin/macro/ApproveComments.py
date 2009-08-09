@@ -94,12 +94,12 @@ def ApproveComments(request):
     </tr>
     <tr>
         <td>
-            <form method="POST" action="/CommentsApproval">
+            <form method="POST" action="/%(approval_page)s">
             <input type="hidden" name="action" value="comment_delete">
             <input type="submit" value="%(button_delete)s" id="delete">
             <input type="hidden" name="file" value="%(key_comment)s">
             </form>
-            <form method="POST" action="/CommentsApproval">
+            <form method="POST" action="/%(approval_page)s">
             <input type="hidden" name="action" value="comment_approve">
             <input type="submit" value="%(button_accept)s" id="ok">
             <input type="hidden" name="file" value="%(key_comment)s">
@@ -109,7 +109,8 @@ def ApproveComments(request):
 </table>
 </div><br />
             """ % {
-                'page_name': replace(key,'_','\\'),
+                'approval_page': APPROVAL_PAGE,
+                'page_name': replace(key,'_','/'),
                 'comment_text': lines,
                 'key_comment': u'%s-%s' % (key, comment),
                 'button_delete': _('Delete'),
@@ -126,7 +127,7 @@ def ApproveComments(request):
     <tr>
         <td>%(error)s</td>
         <td>
-            <form method="POST" action="/CommentsApproval">
+            <form method="POST" action="/%(approval_page)s">
             <input type="hidden" name="action" value="comment_delete">
             <input type="submit" value="%(button_delete)s">
             <input type="hidden" name="file" value="%(key_comment)s">
@@ -136,8 +137,9 @@ def ApproveComments(request):
 </table>
 </div><br />
             """ % {
+                'approval_page': APPROVAL_PAGE,
                 'error': _('Empty comment, it should be deleted.'),
-                'page_name': replace(key,'_','\\'),
+                'page_name': replace(key,'_','/'),
                 'key_comment': u'%s-%s' % (key, comment),
                 'intro': _('Comment to'),
                 'button_delete': _('Delete') }
