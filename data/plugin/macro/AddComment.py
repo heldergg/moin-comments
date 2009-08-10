@@ -83,7 +83,7 @@ class AddComment:
             <tr>
                 <th>%(name_label)s</th>
                 <td>
-                    <input type="text" id="name" name="user_name" value="%(user_name)s">
+                    <input type="text" id="name" maxlength=128 name="user_name" value="%(user_name)s">
                 </td>
             </tr>
             <tr>

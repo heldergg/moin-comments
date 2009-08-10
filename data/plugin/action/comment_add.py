@@ -83,8 +83,12 @@ class AddComment:
 
         if not self.user_name:
             return _('You must enter your name.')
+        if len(self.user_name) > 128:
+            return _('Please use a shorter name.')
         if not self.comment:
             return _('You have yet to write your comment.')
+        if len(self.comment) > 10240:
+            return _('Maximum number of characters is 10240.')
         if ( self.request.cfg.comment_recaptcha and
             not self.captcha.is_valid ):
             return _("I'm not sure you're human! Please fill in the captcha.")
