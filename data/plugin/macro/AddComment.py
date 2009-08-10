@@ -40,6 +40,9 @@ from MoinMoin import wikiutil
 # Auxiliary class:
 class AddComment:
     def __init__(self, macro, header=u'', button_label=u''):
+        def get_arg( arg_name ):
+            return wikiutil.escape(self.request.form.get(arg_name, [''])[0])
+
         self.macro = macro
         self.request = macro.request
         self.formatter = macro.formatter
@@ -57,19 +60,15 @@ class AddComment:
             self.label = _('Send comment')
 
         # If there where errors we've to redisplay the user input:
-        self.user_name = wikiutil.escape(
-                            self.request.form.get('user_name', [""])[0] )
-        self.comment = wikiutil.escape(
-                            self.request.form.get('comment', [""])[0] )
-        self.email = wikiutil.escape(
-                            self.request.form.get('email', [""])[0] )
+        self.user_name = get_arg('user_name')
+        self.comment = get_arg('comment')
+        self.email = get_arg('email')
 
     def renderInPage(self):
         """
         Render comments form in page context.
         """
         _ = self.request.getText
-
         html = u"""
 <center>
 <div class="comments_form">
@@ -77,7 +76,7 @@ class AddComment:
         <input type="hidden" name="action" value="comment_add">
         <input type="hidden" name="page" value="%(page_name)s">
         <table>
-             <tr>
+            <tr>
                 <td></td>
                 <td id="center_cell"><b>%(header)s</b></td>
             </tr>
@@ -94,7 +93,7 @@ class AddComment:
                 </td>
             </tr>
             """ % {
-        'page_name':wikiutil.quoteWikinameURL(self.formatter.page.page_name),
+        'page_name': self.formatter.page.page_name,
         'header': wikiutil.escape(self.header, 1),
         'user_name': self.user_name,
         'comment': self.comment,

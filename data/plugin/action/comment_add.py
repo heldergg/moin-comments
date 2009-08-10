@@ -36,37 +36,42 @@ from datetime import datetime
 import os
 from string import replace, split, letters, digits
 from random import choice
+import pickle
 
 # MoinMoin imports:
 from MoinMoin import config
 from MoinMoin.Page import Page
 from MoinMoin import wikiutil
 
+class CommentError(Exception): pass
+
 class AddComment:
     """
     Add a comment to the approval list.
     """
     def __init__(self, request, referrer):
+        def get_arg( arg_name ):
+            return wikiutil.escape(self.request.form.get(arg_name, [''])[0])
+
 
         # Configuration:
         PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
         APPROVAL_PAGE = request.cfg.comment_approval_page
         self.APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
 
+        # Read the form
         self.request = request
-        self.page = self.request.form.get('page', [None])[0]
-        self.user_name = wikiutil.escape(
-                            self.request.form.get('user_name', [None])[0] )
-        self.comment = wikiutil.escape(
-                            self.request.form.get('comment', [None])[0] )
-        self.email = wikiutil.escape(
-                            self.request.form.get('email', [None])[0] )
+        self.page = get_arg('page')
+        self.user_name = get_arg('user_name')
+        self.comment = get_arg('comment')
+        self.email = get_arg('email')
         self.date = datetime.now()
+
         if request.cfg.comment_recaptcha:
             import captcha
             self.captcha = captcha.submit (
-                self.request.form.get('recaptcha_challenge_field', [None])[0],
-                self.request.form.get('recaptcha_response_field', [None])[0],
+                get_arg('recaptcha_challenge_field'),
+                get_arg('recaptcha_response_field'),
                 request.cfg.comment_recaptcha_private_key,
                 request.remote_addr )
 
@@ -82,7 +87,7 @@ class AddComment:
             return _('You have yet to write your comment.')
         if ( self.request.cfg.comment_recaptcha and
             not self.captcha.is_valid ):
-            return _("I'm not sure you're human! Please fill in the captcha." )
+            return _("I'm not sure you're human! Please fill in the captcha.")
         return ''
 
     def write_comment_for_approval(self):
@@ -90,23 +95,21 @@ class AddComment:
         Writes the comment to the approval directory for evaluation.
         """
         _ = self.request.getText
-        moment = self.date
-        page_ref = replace(self.page, '/', '_')
 
-        comment_hash =  ''.join([choice(letters + digits) for i in range(20)])
+        random_str =  ''.join([choice(letters + digits) for i in range(20)])
+        comment_file = '%s-%s.txt' % (self.date.strftime("%s"), random_str)
+        file_name = os.path.join(self.APPROVAL_DIR, comment_file)
 
-        comment_file = '%s-%s%s.txt' % (page_ref, int(moment.strftime("%s")),
-                    comment_hash)
+        comment = {}
+        comment['page'] = self.page
+        comment['time'] = self.date
+        comment['email'] = self.email
+        comment['user_name'] = self.user_name
+        comment['comment'] = self.comment
 
-        info = '<p id="comment_header">%(time)s - %(by)s <b>%(user_name)s</b><p>%(comment)s</p>' % {
-                'time': moment.strftime("%d-%m-%Y %H:%M:%S"),
-                'user_name': self.user_name,
-                'comment': self.comment,
-                'by': _('Comment by') }
-
-        file = open(os.path.join(self.APPROVAL_DIR, comment_file), 'wb')
-        file.write(info.encode('utf-8'))
-        file.close()
+        f = open(file_name, 'wb')
+        pickle.dump(comment, f )
+        f.close()
 
     def render(self):
         """
@@ -137,3 +140,4 @@ def execute(pagename, request):
     if request.request_method != 'POST':
         return False, u''
     return AddComment(request,pagename).render()
+

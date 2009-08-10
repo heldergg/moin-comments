@@ -36,12 +36,44 @@ Usage:
 
 # General imports:
 import os
-from string import replace, split, letters, digits
 import glob
+import pickle
+from string import letters, digits
 from random import choice
+
+# MoinMoin imports
+from MoinMoin.Page import Page
+
+def read_comment( file_name ):
+    f = open(file_name, 'r')
+    comment = pickle.load(f)
+    f.close()
+    return comment
 
 # Auxiliary function:
 def Comments(request, pagename):
+    def cmp_time( a, b ):
+        if a['time'] < b['time']:
+            return -1
+        elif a['time'] > b['time']:
+            return 1
+        else:
+            return 0
+
+    def comment_html(comment, gettext ):
+        _ = gettext
+        return '''<table>
+    <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
+    <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
+    <tr><td colspan=2>%(comment_text)s</td></tr>
+    </table>''' % {
+        'name': _('Name:'),
+        'comment_name': comment['user_name'],
+        'time': _('Time:'),
+        'comment_time': comment['time'],
+        'comment_text': '<p>'.join( comment['comment'].split('\n') ),
+        }
+
     """
     Returns comments in page context.
     """
@@ -50,31 +82,24 @@ def Comments(request, pagename):
     # Get the configuration:
     DISPLAY_NUMBER = request.cfg.comment_display_number
     OVERLAP_NUMBER = request.cfg.comment_overlap_number
-    PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
+
+    page = Page(request, pagename )
+    comments_dir = page.getPagePath("comments", check_create=1)
 
     formatter = request.html_formatter
     html = ''
 
-    pagename = replace(pagename, '/', '(2f)')
-
-    # Check if comments directory exists and creates it if not
-    comments_dir = os.path.join(PAGES_DIR, pagename, 'comments')
-
-    if not os.path.exists(comments_dir):
-        os.mkdir(comments_dir)
-
-    files = glob.glob('%s/*.txt' % comments_dir)
+    files = glob.glob(os.path.join(comments_dir,'*.txt'))
 
     if not files:
         html = u'<p>%s</p>' % _('There are no comments')
 
     else:
         # Get the file names
-        comments = [split(Xi, '/')[-1] for Xi in files]
+        comments = [ read_comment(Xi) for Xi in files]
 
         # Order by name (remember that the first chars of the name represent the time)
-        comments.sort()
-        comments.reverse()
+        comments.sort(cmp_time)
 
         # Manage the Pagination
         # The last DISPLAY_NUMBER comments are visible while the remaining
@@ -89,10 +114,7 @@ def Comments(request, pagename):
             hidden_comments = []
 
         for comment in visible_comments:
-            data = open(os.path.join(comments_dir, comment), 'r')
-            lines = data.read().decode('utf-8')
-            data.close()
-            html += u"%s" % lines
+            html += u"%s" % comment_html( comment, _ )
 
         if hidden_comments:
             # To avoid display problems if macro is used several times in the same page.
@@ -105,10 +127,7 @@ def Comments(request, pagename):
                 'msg': _('Show/Hide the next %s comments'%len(hidden_comments))}
 
             for comment in hidden_comments:
-                data = open(os.path.join(comments_dir, comment), 'r')
-                lines = data.read().decode('utf-8')
-                data.close()
-                html += u"%s" % lines
+                html += u"%s" % comment_html( comment, _ )
 
             html += u"</div>"
 

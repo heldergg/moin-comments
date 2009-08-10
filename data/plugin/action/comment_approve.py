@@ -45,36 +45,30 @@ class CommentApprove:
     Aapproves a comment
     """
     def __init__(self, request, referrer):
-        # Configuration:
-        self.PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
-        APPROVAL_PAGE = request.cfg.comment_approval_page
-        self.APPROVAL_DIR = os.path.join(self.PAGES_DIR, APPROVAL_PAGE)
+        # TODO: use the following method to get the page dir, it will not
+        # fail with non ascii chars on the page name.
+        page = Page(request, request.cfg.comment_approval_page )
+        self.APPROVAL_DIR = page.getPageBasePath()[1]
 
         self.request = request
         self.referrer = referrer
-        self.file = self.request.form.get('file', [None])[0]
+
+        self.origin = self.request.form.get('file', [''])[0]
+
+        page_name = self.request.form.get('page_name', [''])[0]
+        page = Page(request, page_name )
+        dest_dir = page.getPagePath("comments", check_create=1)
+
+        self.destination = os.path.join(dest_dir,os.path.basename(self.origin))
 
     def render(self):
         """
         Approves comment and redirects to the approval page with success message
         """
         _ = self.request.getText
+
         # Move the file text
-        origin = os.path.join(self.APPROVAL_DIR, self.file)
-
-        page_dest = split(self.file, '-')
-        dir_dest = replace(page_dest[0],  '_',  '(2f)')
-
-        # Rename the file (no need for the page name any more)
-        new_file_name = page_dest[1]
-
-        destination_dir = os.path.join(self.PAGES_DIR, dir_dest, 'comments' )
-        destination = os.path.join( destination_dir, new_file_name)
-
-        if not os.path.exists( destination_dir ):
-            os.mkdir( destination_dir )
-
-        os.rename(origin, destination)
+        os.rename(self.origin, self.destination)
 
         # Return Approval page with success message
         msg = _('Comment approved')

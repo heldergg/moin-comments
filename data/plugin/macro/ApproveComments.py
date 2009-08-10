@@ -39,14 +39,33 @@ Requirements:
 
 # General imports:
 import os
-from string import split, replace
+import pickle
+from datetime import datetime
 import glob
+
+def read_comment( file_name ):
+    f = open(file_name, 'r')
+    comment = pickle.load(f)
+    f.close()
+    return comment
 
 # Auxiliary function:
 def ApproveComments(request):
     """
     Render comments form in page context.
     """
+    def cmp_page_time( a, b ):
+        if a['page'] < b['page']:
+            return -1
+        elif a['page'] > b['page']:
+            return 1
+        else:
+            if a['time'] < b['time']:
+                return -1
+            elif a['time'] > b['time']:
+                return 1
+        return 0
+
     _ = request.getText
 
     # Configuration:
@@ -57,94 +76,63 @@ def ApproveComments(request):
     formatter = request.html_formatter
     html = ''
 
-    files = glob.glob('%s/*.txt' % APPROVAL_DIR)
+    files = glob.glob(os.path.join(APPROVAL_DIR,'*.txt'))
 
     if not files:
-        html = u'<p>%s</p>' % _("There's no comment awaiting for moderation.")
+        html = [u'<p>%s</p>' % _("There's no comment awaiting for moderation.")]
     else:
-        # Organize files by page
-        info = {}
-        for file in files:
-            file = split(file, '/')
-            title = split(file[-1], '-')
-            if not info.has_key(title[0]):
-                info[title[0]] = []
-            info[title[0]].append(title[1])
+        comments = []
 
-        for key in info:
-            comments = info[key]
-            comments.sort()
-            comments.reverse()
+        # Read the comments:
+        for file_name in files:
+            comment = read_comment( file_name )
+            comments.append(comment)
+            comments[-1]['file_name'] = file_name
 
-            for comment in comments:
+        # Sort the coments by page, then by time
+        comments.sort(cmp_page_time)
 
-                data = open(os.path.join(APPROVAL_DIR, '%s-%s' % (key, comment)), 'r')
-                lines = data.read().decode('utf-8')
-                data.close()
-
-                if lines:
-                    html += u"""
-<div class="comment_approval">
-<table>
-    <tr>
-        <th>%(intro)s %(page_name)s</th>
-    </tr>
-    <tr>
-        <td>%(comment_text)s</td>
-    </tr>
-    <tr>
-        <td>
-            <form method="POST" action="/%(approval_page)s">
-            <input type="hidden" name="action" value="comment_delete">
-            <input type="submit" value="%(button_delete)s" id="delete">
-            <input type="hidden" name="file" value="%(key_comment)s">
-            </form>
-            <form method="POST" action="/%(approval_page)s">
-            <input type="hidden" name="action" value="comment_approve">
-            <input type="submit" value="%(button_accept)s" id="ok">
-            <input type="hidden" name="file" value="%(key_comment)s">
-            </form>
-        </td>
-    </tr>
-</table>
-</div><br />
-            """ % {
-                'approval_page': APPROVAL_PAGE,
-                'page_name': replace(key,'_','/'),
-                'comment_text': lines,
-                'key_comment': u'%s-%s' % (key, comment),
-                'button_delete': _('Delete'),
-                'button_accept': _('Accept'),
-                'intro': _('Comment to') }
-
-                else: # If the file is empty:
-                    html += u"""
-<div class="comment_approval">
+        html = []
+        for comment in comments:
+            html.append( u"""<div class="comment_approval">
 <table>
     <tr>
         <th colspan=2>%(intro)s %(page_name)s</th>
     </tr>
+    <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
+    <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
+    <tr><td colspan=2>%(comment_text)s</td></tr>
     <tr>
-        <td>%(error)s</td>
-        <td>
+        <td colspan=2>
             <form method="POST" action="/%(approval_page)s">
             <input type="hidden" name="action" value="comment_delete">
-            <input type="submit" value="%(button_delete)s">
-            <input type="hidden" name="file" value="%(key_comment)s">
+            <input type="submit" value="%(button_delete)s" id="delete">
+            <input type="hidden" name="file" value="%(comment_file)s">
+            </form>
+            <form method="POST" action="/%(approval_page)s">
+            <input type="hidden" name="action" value="comment_approve">
+            <input type="submit" value="%(button_accept)s" id="ok">
+            <input type="hidden" name="file" value="%(comment_file)s">
+            <input type="hidden" name="page_name" value="%(page_name)s">
             </form>
         </td>
     </tr>
 </table>
-</div><br />
-            """ % {
-                'approval_page': APPROVAL_PAGE,
-                'error': _('Empty comment, it should be deleted.'),
-                'page_name': replace(key,'_','/'),
-                'key_comment': u'%s-%s' % (key, comment),
+</div><br />""" % {
                 'intro': _('Comment to'),
-                'button_delete': _('Delete') }
+                'page_name': comment['page'],
+                'name': _('Name:'),
+                'time': _('Time:'),
+                'comment_time': comment['time'],
+                'comment_name': comment['user_name'],
+                'comment_text': '<p>'.join( comment['comment'].split('\n') ),
+                'comment_file': comment['file_name'],
+                'approval_page': APPROVAL_PAGE,
+                'button_delete': _('Delete'),
+                'button_accept': _('Accept'),
+                 } )
 
-    return formatter.rawHTML(html)
+    return formatter.rawHTML('\n'.join(html))
 
 # Macro function:
 def macro_ApproveComments(macro):
