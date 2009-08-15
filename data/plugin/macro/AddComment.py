@@ -36,54 +36,140 @@ Usage:
 
 # MoinMoin imports:
 from MoinMoin import wikiutil
+from MoinMoin.Page import Page
+
+from datetime import datetime
+from random import choice
+from string import letters, digits
+import pickle
+import os
 
 # Auxiliary class:
 class AddComment:
-    def __init__(self, macro, header=u'', button_label=u''):
-        def get_arg( arg_name ):
-            return wikiutil.escape(self.request.form.get(arg_name, [''])[0])
-
+    def __init__(self, macro ):
         self.macro = macro
-        self.request = macro.request
-        self.formatter = macro.formatter
+        self.page_name = macro.formatter.page.page_name
 
-        _ = self.request.getText
+        self.msg = ''
 
-        if header:
-            self.header = header
+        if macro.request.request_method == 'POST':
+            self.save_comment()
         else:
-            self.header = _('Comment this page')
+            self.get_comment()
+            self.errors = []
 
-        if button_label:
-            self.label = button_label
-        else:
-            self.label = _('Send comment')
+    def get_input( self, arg_name, default = ''  ):
+        return wikiutil.escape(
+                self.macro.request.form.get(arg_name, [default])[0])
 
-        # If there where errors we've to redisplay the user input:
-        self.user_name = get_arg('user_name')
-        self.comment = get_arg('comment')
-        self.email = get_arg('email')
+    def get_cfg( self, key, default = None ):
+        try:
+            return self.macro.request.cfg[key]
+        except AttributeError:
+            return default
+
+    def get_comment(self):
+        self.comment = {
+            'user_name' : self.get_input('user_name'),
+            'comment': self.get_input('comment'),
+            'email': self.get_input('email'),
+            }
+
+    def errors_check(self):
+        """
+        Check the form for errors.
+        """
+        _ = self.macro.request.getText
+
+        errors = []
+
+        if not self.comment['user_name']:
+            errors.append( _('You must enter your name.') )
+        if len(self.comment['user_name']) > 128:
+            errors.append( _('Please use a shorter name.') )
+        if not self.comment['comment']:
+            errors.append( _('You have yet to write your comment.') )
+        if len(self.comment['comment']) > 10240:
+            errors.append( _('Maximum number of characters is 10240.'))
+            
+        if ( self.get_cfg('comment_recaptcha', False) and
+            not self.captcha.is_valid ):
+            errors.append( _("I'm not sure you're human! Please fill in the captcha."))
+            
+        return errors
+
+    def save_comment( self ):
+        _ = self.macro.request.getText
+        
+        if self.get_input( 'do' ) != u'comment_add':
+            # This is not a comment post do nothing
+            return
+
+        if self.get_cfg('comment_recaptcha', False ):
+            import captcha
+            self.captcha = captcha.submit (
+                get_arg('recaptcha_challenge_field'),
+                get_arg('recaptcha_response_field'),
+                self.get_cfg('comment_recaptcha_private_key'),
+                request.remote_addr )
+
+        self.get_comment()
+        self.errors = self.errors_check()
+
+        if not self.errors: # Save the comment
+            # Find out where to save the comment:
+            if self.get_cfg('comment_moderate', True):
+                page = Page(self.macro.request,
+                    self.get_cfg('comment_approval_page', 'CommentsApproval'))
+                comment_dir = page.getPagePath('', check_create=0)
+            else:
+                page = Page(self.macro.request,self.page_name)
+                comment_dir = page.getPagePath('comments', check_create=1)
+
+            now = datetime.now()
+            random_str =  ''.join([choice(letters + digits) for i in range(20)])
+            comment_file = '%s-%s.txt' % (now.strftime("%s"), random_str)
+            file_name = os.path.join(comment_dir, comment_file)
+
+            comment = self.comment
+            comment['page'] = self.page_name
+            comment['time'] = now
+
+            f = open(file_name, 'wb')
+            pickle.dump(comment, f )
+            f.close()
+
+            if self.get_cfg('comment_moderate', True):
+                self.msg = _('Your comment awaits moderation. Thank you.')
+            else:
+                self.msg = _('Your comment has been posted. Thank you.')
+                
+            # clean up the fields to display
+            self.comment = {
+                'user_name' : '',
+                'comment': '',
+                'email': '',
+                }
 
     def renderInPage(self):
         """
         Render comments form in page context.
         """
-        _ = self.request.getText
-        html = u"""
-<center>
-<div class="comments_form">
-    <form method="POST" action="/%(page_name)s">
-        <input type="hidden" name="action" value="comment_add">
-        <input type="hidden" name="page" value="%(page_name)s">
-        <table>
+        _ = self.macro.request.getText
+        html = u'''<div class="comments_form">
+        <form method="POST" action="/%(page_name)s">
+        <input type="hidden" name="do" value="comment_add">
+        <table>''' % { 'page_name': self.page_name }
+
+        html += '''
             <tr>
-                <td></td>
-                <td id="center_cell"><b>%(header)s</b></td>
+                <td colspan=2 id="center_cell"><b>%(header)s</b></td>
             </tr>
             <tr>
                 <th>%(name_label)s</th>
                 <td>
-                    <input type="text" id="name" maxlength=128 name="user_name" value="%(user_name)s">
+                    <input type="text" id="name" maxlength=128 name="user_name"
+                           value="%(user_name)s">
                 </td>
             </tr>
             <tr>
@@ -92,15 +178,30 @@ class AddComment:
                     <textarea name="comment">%(comment)s</textarea>
                 </td>
             </tr>
-            """ % {
-        'page_name': self.formatter.page.page_name,
-        'header': wikiutil.escape(self.header, 1),
-        'user_name': self.user_name,
-        'comment': self.comment,
-        'name_label': _('Name:'),
-        'comment_label': _('Comment:')  }
+            ''' % {
+            'page_name': self.page_name,
+            'user_name': self.comment['user_name'],
+            'comment':   self.comment['comment'],
+            'header': _('Comment this page'),
+            'name_label': _('Name:'),
+            'comment_label': _('Comment:')  }
 
-        if self.request.cfg.comment_recaptcha:
+        if self.msg:
+            html += u'<tr><td colspan = 2><div id="comment_message">'
+            html += u'<p>%s</p>' % self.msg
+            html += u'</div></td></tr>'
+
+        if self.errors:
+            html += u'<tr><td colspan = 2><div id="comment_error">'
+            if len(self.errors) > 1:
+                html += u'<p>%s</p><ul>'  % _('Your comment has errors:')
+            else:
+                html += u'<p>%s</p><ul>'  % _('Your comment has one error:')
+            for error in self.errors:
+                html += u'<li>%s</li>' % error
+            html += u'</ul></div></td></tr>'
+
+        if self.get_cfg('comment_recaptcha', False):
             import captcha
             html += u"""
             <tr>
@@ -109,24 +210,19 @@ class AddComment:
                     %(recaptcha)s
                 </td>
             </tr>""" % {
-
             'recaptcha' : captcha.displayhtml(
-                                self.request.cfg.comment_recaptcha_public_key ),
+                                self.get_cfg('comment_recaptcha_public_key')),
             'recaptcha_label': _('Are you human?') }
 
         html += """
              <tr>
-                <td></td>
-                <td id="center_cell"><input type="submit" value="%(label)s">
+                <td colspan=2 id="center_cell"><input type="submit" value="%(label)s">
                 </td>
             </tr>
-        </table>
-    </form>
-</div>
-</center>""" % { 'label': wikiutil.escape(self.label, 1) }
+        </table></form></div>""" % { 'label': _('Send comment') }
 
-        return self.formatter.rawHTML(html)
+        return self.macro.formatter.rawHTML(html)
 
 # Macro function:
-def macro_AddComment(macro, header=u'', button_label=u''):
-    return AddComment(macro, header, button_label).renderInPage()
+def macro_AddComment(macro):
+    return AddComment(macro).renderInPage()
