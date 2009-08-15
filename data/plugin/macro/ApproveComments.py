@@ -38,10 +38,15 @@ Requirements:
 """
 
 # General imports:
+from MoinMoin.Page import Page
+from MoinMoin import wikiutil
+
 import os
 import pickle
 from datetime import datetime
 import glob
+
+class ApproveError(Exception): pass
 
 def read_comment( file_name ):
     f = open(file_name, 'r')
@@ -49,91 +54,153 @@ def read_comment( file_name ):
     f.close()
     return comment
 
-# Auxiliary function:
-def ApproveComments(request):
-    """
-    Render comments form in page context.
-    """
-    def cmp_page_time( a, b ):
-        if a['page'] < b['page']:
-            return -1
-        elif a['page'] > b['page']:
-            return 1
-        else:
-            if a['time'] < b['time']:
+
+class ApproveComments:
+    def __init__(self, macro ):
+        self.macro = macro
+        self.raw_html = macro.request.html_formatter.rawHTML
+        self.page_name = unicode(self.get_cfg('comment_approval_page',
+                        'CommentsApproval'))
+        self.msg = []
+
+        if self.page_name != macro.formatter.page.page_name:
+            # It's mandatory to run the ApproveComments macro from the
+            # comment_approval_page defined in the configuration
+            return
+
+        page = Page(macro.request,self.page_name)
+        if not page.exists():
+            raise ApproveError('You have to create the approval page!')
+        self.approval_dir = page.getPagePath('', check_create=0)
+
+        if macro.request.request_method == 'POST':
+            if self.get_input( 'do' ) == u'comment_delete':
+                self.delete_comment()
+            if self.get_input( 'do' ) == u'comment_approve':
+                self.approve_comment()
+
+    def get_input( self, arg_name, default = ''  ):
+        return wikiutil.escape(
+                self.macro.request.form.get(arg_name, [default])[0])
+
+    def get_cfg( self, key, default = None ):
+        try:
+            return self.macro.request.cfg[key]
+        except AttributeError:
+            return default
+
+    def delete_comment(self):
+        _ = self.macro.request.getText
+        
+        file_name = self.get_input( 'file' )
+        os.remove(os.path.join(self.approval_dir, file_name))
+        self.msg.append(_('Comment deleted'))
+    
+    def approve_comment(self):
+        _ = self.macro.request.getText
+
+        # Source
+        origin = os.path.join(self.approval_dir, self.get_input('file'))
+        comment = read_comment( origin )
+
+        # Destination 
+        page = Page(self.macro.request, comment['page'] )
+        if not page.exists():
+            self.msg.append(_('The page this comment was written for don\'t exist any more'))
+            return
+        
+        dest_dir = page.getPagePath("comments", check_create=1)
+        destination = os.path.join(dest_dir,self.get_input('file'))
+
+        # Rename the file:
+        os.rename(origin, destination)
+        self.msg.append(_('Comment approved'))
+        
+    def render_in_page(self):
+
+        def cmp_page_time( a, b ):
+            if a['page'] < b['page']:
                 return -1
-            elif a['time'] > b['time']:
+            elif a['page'] > b['page']:
                 return 1
-        return 0
-
-    _ = request.getText
-
-    # Configuration:
-    PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
-    APPROVAL_PAGE = request.cfg.comment_approval_page
-    APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
-
-    formatter = request.html_formatter
-    html = ''
-
-    files = glob.glob(os.path.join(APPROVAL_DIR,'*.txt'))
-
-    if not files:
-        html = [u'<p>%s</p>' % _("There's no comment awaiting for moderation.")]
-    else:
-        comments = []
-
-        # Read the comments:
-        for file_name in files:
-            comment = read_comment( file_name )
-            comments.append(comment)
-            comments[-1]['file_name'] = file_name
-
-        # Sort the coments by page, then by time
-        comments.sort(cmp_page_time)
+            else:
+                if a['time'] < b['time']:
+                    return -1
+                elif a['time'] > b['time']:
+                    return 1
+            return 0
+        
+        _ = self.macro.request.getText
+        
+        if self.page_name != self.macro.formatter.page.page_name:
+            return self.raw_html('<p>%s</p>' %
+                _('Sorry, but the  ApproveComments macro must be used on %s page' %
+                   self.page_name ) )
 
         html = []
-        for comment in comments:
-            html.append( u"""<div class="comment_approval">
+
+        if self.msg:
+            html.append('<div class="comment_message"><ul>')
+            for m in self.msg:
+                 html.append('<li>%s</li>' % m)
+            html.append('</ul></div>')
+        
+        files = glob.glob(os.path.join(self.approval_dir,'*.txt'))
+        if not files:
+            html.append(u'<p>%s</p>' % _("There's no comment awaiting for moderation."))
+        else:
+            
+            comments = []
+
+            # Read the comments:
+            for file_name in files:
+                comment = read_comment( file_name )
+                comment['file_name'] = file_name
+                comments.append(comment)
+
+                
+            # Sort the coments by page, then by time
+            comments.sort(cmp_page_time)
+
+            
+            for comment in comments:
+                html.append( u"""<div class="comment_approval">
 <table>
-    <tr>
-        <th colspan=2>%(intro)s %(page_name)s</th>
-    </tr>
-    <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
-    <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
-    <tr><td colspan=2>%(comment_text)s</td></tr>
-    <tr>
-        <td colspan=2>
-            <form method="POST" action="/%(approval_page)s">
-            <input type="hidden" name="action" value="comment_delete">
-            <input type="submit" value="%(button_delete)s" id="delete">
-            <input type="hidden" name="file" value="%(comment_file)s">
-            </form>
-            <form method="POST" action="/%(approval_page)s">
-            <input type="hidden" name="action" value="comment_approve">
-            <input type="submit" value="%(button_accept)s" id="ok">
-            <input type="hidden" name="file" value="%(comment_file)s">
-            <input type="hidden" name="page_name" value="%(page_name)s">
-            </form>
-        </td>
-    </tr>
+  <tr><th colspan=2>%(intro)s %(page_name)s</th></tr>
+  <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
+  <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
+  <tr><td colspan=2>%(comment_text)s</td></tr>
+  <tr>
+    <td colspan=2>
+      <form method="POST" action="%(page_uri)s">
+        <input type="hidden" name="do" value="comment_delete">
+        <input type="submit" value="%(button_delete)s" id="delete">
+        <input type="hidden" name="file" value="%(comment_file)s">
+      </form>
+      <form method="POST" action="%(page_uri)s">
+        <input type="hidden" name="do" value="comment_approve">
+        <input type="submit" value="%(button_accept)s" id="ok">
+        <input type="hidden" name="file" value="%(comment_file)s">
+      </form>
+    </td>
+  </tr>
 </table>
 </div><br />""" % {
                 'intro': _('Comment to'),
                 'page_name': comment['page'],
                 'name': _('Name:'),
                 'time': _('Time:'),
-                'comment_time': comment['time'],
+                'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
                 'comment_name': comment['user_name'],
                 'comment_text': '<p>'.join( comment['comment'].split('\n') ),
-                'comment_file': comment['file_name'],
-                'approval_page': APPROVAL_PAGE,
+                'comment_file': os.path.basename(comment['file_name']),
+                'page_uri': self.macro.request.request_uri,
                 'button_delete': _('Delete'),
                 'button_accept': _('Accept'),
-                 } )
+                } )
 
-    return formatter.rawHTML('\n'.join(html))
+        return self.raw_html('\n'.join(html))
 
 # Macro function:
 def macro_ApproveComments(macro):
-    return ApproveComments(macro.request)
+    return ApproveComments(macro).render_in_page()

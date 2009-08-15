@@ -157,9 +157,9 @@ class AddComment:
         """
         _ = self.macro.request.getText
         html = u'''<div class="comments_form">
-        <form method="POST" action="/%(page_name)s">
+        <form method="POST" action="%(page_uri)s">
         <input type="hidden" name="do" value="comment_add">
-        <table>''' % { 'page_name': self.page_name }
+        <table>''' % { 'page_uri': self.macro.request.request_uri }
 
         html += '''
             <tr>
@@ -206,9 +206,7 @@ class AddComment:
             html += u"""
             <tr>
                 <th>%(recaptcha_label)s</th>
-                <td>
-                    %(recaptcha)s
-                </td>
+                <td>%(recaptcha)s</td>
             </tr>""" % {
             'recaptcha' : captcha.displayhtml(
                                 self.get_cfg('comment_recaptcha_public_key')),
