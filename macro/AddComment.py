@@ -51,12 +51,15 @@ class AddComment:
         self.page_name = macro.formatter.page.page_name
 
         self.msg = ''
+        self.comment = {
+                'user_name' : '',
+                'comment': '',
+                'email': '',
+                }
+        self.errors = []
 
         if macro.request.request_method == 'POST':
             self.save_comment()
-        else:
-            self.get_comment()
-            self.errors = []
 
     def get_input( self, arg_name, default = ''  ):
         return wikiutil.escape(
@@ -134,6 +137,8 @@ class AddComment:
             comment = self.comment
             comment['page'] = self.page_name
             comment['time'] = now
+            if self.get_cfg('comment_store_addr', False):
+                comment['remote_addr'] = self.macro.request.remote_addr
 
             f = open(file_name, 'wb')
             pickle.dump(comment, f )

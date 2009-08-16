@@ -164,12 +164,24 @@ class ApproveComments:
 
             
             for comment in comments:
-                html.append( u"""<div class="comment_approval">
+                html.append( u'''<div class="comment_approval">
 <table>
   <tr><th colspan=2>%(intro)s %(page_name)s</th></tr>
   <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
-  <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
-  <tr><td colspan=2>%(comment_text)s</td></tr>
+  <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>''' % {
+                    'intro': _('Comment to'),
+                    'page_name': comment['page'],
+                    'name': _('Name:'),
+                    'time': _('Time:'),
+                    'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
+                    'comment_name': comment['user_name'],
+                    })
+                if self.get_cfg('comment_store_addr', False):
+                    html.append(u'  <tr><td>%(remote_addr)s</td><td>%(comment_addr)s</td></tr>' % {
+                    'remote_addr': _('Remote address:'),
+                    'comment_addr': comment['remote_addr'],
+                    })
+                html.append(u'''  <tr><td colspan=2>%(comment_text)s</td></tr>
   <tr>
     <td colspan=2>
       <form method="POST" action="%(page_uri)s">
@@ -185,13 +197,7 @@ class ApproveComments:
     </td>
   </tr>
 </table>
-</div><br />""" % {
-                'intro': _('Comment to'),
-                'page_name': comment['page'],
-                'name': _('Name:'),
-                'time': _('Time:'),
-                'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
-                'comment_name': comment['user_name'],
+</div><br />''' % {
                 'comment_text': '<p>'.join( comment['comment'].split('\n') ),
                 'comment_file': os.path.basename(comment['file_name']),
                 'page_uri': self.macro.request.request_uri,
