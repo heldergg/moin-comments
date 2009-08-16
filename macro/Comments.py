@@ -43,6 +43,7 @@ from random import choice
 
 # MoinMoin imports
 from MoinMoin.Page import Page
+from MoinMoin import wikiutil
 
 def read_comment( file_name ):
     f = open(file_name, 'r')
@@ -51,17 +52,28 @@ def read_comment( file_name ):
     return comment
 
 # Auxiliary function:
-def Comments(request, pagename):
-    def cmp_time( a, b ):
-        if a['time'] < b['time']:
-            return -1
-        elif a['time'] > b['time']:
-            return 1
-        else:
-            return 0
+class Comments:
+    def __init__(self, macro, page_name):
+        self.macro = macro
+        
+        if page_name == u'':
+            # By default show the comments for the current page
+            page_name = macro.formatter.page.page_name
+        self.page_name = page_name
 
-    def comment_html(comment, gettext ):
-        _ = gettext
+    def get_input( self, arg_name, default = ''  ):
+        return wikiutil.escape(
+                self.macro.request.form.get(arg_name, [default])[0])
+
+    def get_cfg( self, key, default = None ):
+        try:
+            return self.macro.request.cfg[key]
+        except AttributeError:
+            return default
+
+
+    def comment_html(self, comment):
+        _ = self.macro.request.getText
         return '''<table>
     <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
     <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
@@ -70,90 +82,87 @@ def Comments(request, pagename):
         'name': _('Name:'),
         'comment_name': comment['user_name'],
         'time': _('Time:'),
-        'comment_time': comment['time'],
+        'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
         'comment_text': '<p>'.join( comment['comment'].split('\n') ),
         }
 
-    """
-    Returns comments in page context.
-    """
-    _ = request.getText
-
-    # Get the configuration:
-    DISPLAY_NUMBER = request.cfg.comment_display_number
-    OVERLAP_NUMBER = request.cfg.comment_overlap_number
-
-    page = Page(request, pagename )
-    comments_dir = page.getPagePath("comments", check_create=1)
-
-    formatter = request.html_formatter
-    html = ''
-
-    files = glob.glob(os.path.join(comments_dir,'*.txt'))
-
-    if not files:
-        html = u'<p>%s</p>' % _('There are no comments')
-
-    else:
-        # Get the file names
-        comments = [ read_comment(Xi) for Xi in files]
-
-        # Order by name (remember that the first chars of the name represent the time)
-        comments.sort(cmp_time)
-
-        # Manage the Pagination
-        # The last DISPLAY_NUMBER comments are visible while the remaining
-        # are hidden and only displayed on demand (link inside the page)
-        # It allows the display without the hide feature if remaining comments
-        # do not exceed the OVERLAP_NUMBER.
-        if len(comments)>DISPLAY_NUMBER+OVERLAP_NUMBER:
-            visible_comments = comments[:DISPLAY_NUMBER]
-            hidden_comments = comments[DISPLAY_NUMBER:]
-        else:
-            visible_comments = comments
-            hidden_comments = []
-
-        for comment in visible_comments:
-            html += u"%s" % comment_html( comment, _ )
-
-        if hidden_comments:
-            # To avoid display problems if macro is used several times in the same page.
-            div_id = ''.join([choice(letters + digits) for i in range(3)])
-
-            html += u"""<a href="#" onClick = showAndHide('%(div_id)s')>
-            %(msg)s</a>
-            <div id='%(div_id)s' style="display:none"><br />""" % {
-                'div_id': div_id,
-                'msg': _('Show/Hide the next %s comments'%len(hidden_comments))}
-
-            for comment in hidden_comments:
-                html += u"%s" % comment_html( comment, _ )
-
-            html += u"</div>"
-
-            # Place the javascript to hide and show the comments
-            # NOTE: If used more than one time in the same page this part is repeated,
-            # it should work but it's not the best HTML code.
-            html += u"""
-<script language="JavaScript">
-function showAndHide(theId)
-{
-   var el = document.getElementById(theId)
-
-   if (el.style.display=="none")
-   {
-      el.style.display="block"; //show element
-   }
-   else
-   {
-      el.style.display="none"; //hide element
-   }
-}
-</script>
+    def render_in_page(self):
         """
+        Returns comments in page context.
+        """
+        _ = self.macro.request.getText
+        
+        def navbar(page_number, max_pages, page_uri):
+            if max_pages == 1:
+                return ''
+            
+            html = ['<div class="navbar">']
+            if page_number > 1:
+                html.append('<div class="prevcmt">')
+                html.append('<a href="http://%s">%s</a>&nbsp;&nbsp;&nbsp;' %
+                        (page_uri,_('|&lt;')))
+                html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;&nbsp;' %
+                        (page_uri,page_number-1,_('&lt;&lt;')))
+                html.append('</div>')
+            
+            if page_number < max_pages:
+                html.append('<div class="nextcmt">')
+                html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;&nbsp;' %
+                        (page_uri,page_number+1,_('&gt;&gt;')))
+                html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;&nbsp;' %
+                        (page_uri,max_pages,_('&gt;|')))
+                html.append('</div>')
 
-    return formatter.rawHTML(html)
+            html.append('</div>')
+
+            return '\n'.join(html)
+            
+        # Get the configuration:
+
+        page = Page(self.macro.request, self.page_name )
+        comments_dir = page.getPagePath("comments", check_create=1)
+
+        files = glob.glob(os.path.join(comments_dir,'*.txt'))
+        files.sort()
+
+        html = [u'<a name="comment_section"></a>']
+        if not files:
+            html.append(u'<p>%s</p>' % _('There are no comments'))
+        else:
+            # Do the pagination
+            cmt_per_page = int(self.get_cfg('comment_cmt_per_page',50))
+
+            if cmt_per_page:
+                page_uri = self.macro.request.splitURI(self.macro.request.url)[0]
+
+                number_messages = len(files)
+                max_pages = ( number_messages / cmt_per_page +
+                            (1 if number_messages % cmt_per_page else 0 ))
+                try:
+                    page_number = int(self.get_input( 'page_number', 1 ))
+                except ValueError:
+                    page_number = 1
+                if page_number > max_pages:
+                    page_number = max_pages
+                elif page_number < 1:
+                    page_number = 1
+
+                first = (page_number - 1) * cmt_per_page
+                last  = first + cmt_per_page
+
+                files = files[first:last]
+            
+            # Get the file names
+            comments = [ read_comment(Xi) for Xi in files]
+
+            for comment in comments:
+                html.append( u"%s" % self.comment_html( comment ) )
+
+            if cmt_per_page:
+                html.append(navbar(page_number, max_pages, page_uri))
+
+        return self.macro.request.html_formatter.rawHTML('\n'.join(html))
 
 # Macro function:
-def macro_Comments(macro, pagename=u''):
-    return Comments(macro.request, pagename)
+def macro_Comments(macro, page_name=u''):
+    return Comments(macro, page_name).render_in_page()

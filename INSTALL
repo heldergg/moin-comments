@@ -17,8 +17,8 @@ values shown):
     
 comment_moderate = True
 comment_approval_page = 'CommentsApproval'
-comment_display_number = 2
-comment_overlap_number = 2
+comment_store_addr = False
+comment_cmt_per_page = 50
 
 comment_recaptcha = False
 comment_recaptcha_public_key = None
