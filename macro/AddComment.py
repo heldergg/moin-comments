@@ -111,10 +111,10 @@ class AddComment:
         if self.get_cfg('comment_recaptcha', False ):
             import captcha
             self.captcha = captcha.submit (
-                get_arg('recaptcha_challenge_field'),
-                get_arg('recaptcha_response_field'),
+                self.get_input('recaptcha_challenge_field'),
+                self.get_input('recaptcha_response_field'),
                 self.get_cfg('comment_recaptcha_private_key'),
-                request.remote_addr )
+                self.macro.request.remote_addr )
 
         self.get_comment()
         self.errors = self.errors_check()
