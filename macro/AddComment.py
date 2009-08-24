@@ -224,7 +224,11 @@ class AddComment:
             </tr>
         </table></form></div>""" % { 'label': _('Send comment') }
 
-        return self.macro.formatter.rawHTML(html)
+        try:
+            return self.macro.formatter.rawHTML(html)
+        except:
+            return self.macro.formatter.escapedText('')
+                
 
 # Macro function:
 def macro_AddComment(macro):

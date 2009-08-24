@@ -160,8 +160,12 @@ class Comments:
 
             if cmt_per_page:
                 html.append(navbar(page_number, max_pages, page_uri))
-
-        return self.macro.request.html_formatter.rawHTML('\n'.join(html))
+        
+        try:
+            return self.macro.formatter.rawHTML('\n'.join(html))
+        except:
+            return self.macro.formatter.escapedText('')
+                
 
 # Macro function:
 def macro_Comments(macro, page_name=u''):

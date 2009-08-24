@@ -58,7 +58,6 @@ def read_comment( file_name ):
 class ApproveComments:
     def __init__(self, macro ):
         self.macro = macro
-        self.raw_html = macro.request.html_formatter.rawHTML
         self.page_name = unicode(self.get_cfg('comment_approval_page',
                         'CommentsApproval'))
         self.msg = []
@@ -133,9 +132,10 @@ class ApproveComments:
         _ = self.macro.request.getText
         
         if self.page_name != self.macro.formatter.page.page_name:
-            return self.raw_html('<p>%s</p>' %
-                _('Sorry, but the  ApproveComments macro must be used on %s page' %
-                   self.page_name ) )
+            return self.macro.formatter.text(
+             _('Sorry, but the  ApproveComments macro must be '
+               'used on %(page_name)s page.' %
+                { 'page_name': self.page_name } ))
 
         html = []
 
@@ -148,8 +148,7 @@ class ApproveComments:
         files = glob.glob(os.path.join(self.approval_dir,'*.txt'))
         if not files:
             html.append(u'<p>%s</p>' % _("There's no comment awaiting for moderation."))
-        else:
-            
+        else:            
             comments = []
 
             # Read the comments:
@@ -157,12 +156,10 @@ class ApproveComments:
                 comment = read_comment( file_name )
                 comment['file_name'] = file_name
                 comments.append(comment)
-
                 
             # Sort the coments by page, then by time
             comments.sort(cmp_page_time)
 
-            
             for comment in comments:
                 html.append( u'''<div class="comment_approval">
 <table>
@@ -205,7 +202,10 @@ class ApproveComments:
                 'button_accept': _('Accept'),
                 } )
 
-        return self.raw_html('\n'.join(html))
+        try:
+            return self.macro.formatter.rawHTML('\n'.join(html))
+        except:
+            return self.macro.formatter.escapedText('')
 
 # Macro function:
 def macro_ApproveComments(macro):

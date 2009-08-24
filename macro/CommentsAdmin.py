@@ -65,8 +65,8 @@ class CommentsAdmin:
         Providing the link to the approval page in any place the user sees fit.
         """
         request = self.macro.request
-        
         _ = request.getText
+        
         # Configuration:
         page_name = unicode(self.get_cfg('comment_approval_page',
             'CommentsApproval'))
@@ -78,9 +78,6 @@ class CommentsAdmin:
         approval_dir = page.getPagePath('', check_create=0)
         approval_url = wikiutil.quoteWikinameURL(page_name)
 
-        formatter = request.html_formatter
-        html = ''
-
         if request.user.isSuperUser():
             # Get the number of comments waiting for approval
             files = glob.glob('%s/*.txt' % approval_dir)
@@ -88,8 +85,13 @@ class CommentsAdmin:
 
             html = u'<a href="%s">%s (%s)</a>' % (
                 approval_url, _('Pending Comments'), total_waiting)
+        else:
+            html = u''
 
-        return formatter.rawHTML(html)
+        try:
+            return self.macro.formatter.rawHTML(html)
+        except:
+            return self.macro.formatter.escapedText('')
 
 # Macro function:
 def macro_CommentsAdmin(macro):
