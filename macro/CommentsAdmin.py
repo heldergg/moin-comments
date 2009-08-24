@@ -34,45 +34,63 @@ user is a SuperUser he will see the link to the comments approval page,
 with the total of comments waiting for approval.
 
  Usage:
-    <<CommentsAdmin()>>
-    or
-    <<CommentsAdmin(Some header text)>>
+    <<CommentsAdmin>>
 """
 # General imports:
 import os
 import glob
-from string import split, replace
 
 # MoinMoin imports:
-from MoinMoin import user
+from MoinMoin import user, wikiutil 
+from MoinMoin.Page import Page
 
-def CommentsAdmin(request, header_text):
-    """
-    Providing the link to the approval page in any place the user sees fit.
-    """
-    _ = request.getText
-    # Configuration:
-    PAGES_DIR = os.path.join(request.cfg.data_dir, 'pages')
-    APPROVAL_PAGE = request.cfg.comment_approval_page
-    APPROVAL_DIR = os.path.join(PAGES_DIR, APPROVAL_PAGE)
+class ApproveError(Exception): pass
 
-    formatter = request.html_formatter
-    html = ''
+class CommentsAdmin:
+    def __init__(self, macro ):
+        self.macro = macro
+        
+    def get_input( self, arg_name, default = ''  ):
+        return wikiutil.escape(
+        self.macro.request.form.get(arg_name, [default])[0])
 
-    if request.user.isSuperUser():
-        if header_text:
-            html += '<strong>%s</strong><br /><br />' % header_text
+    def get_cfg( self, key, default = None ):
+        try:
+            return self.macro.request.cfg[key]
+        except AttributeError:
+            return default
 
-        # Calculate the number of comments waiting for approval
-        files = glob.glob('%s/*.txt' % APPROVAL_DIR)
-        total_waiting = len(files)
+    def render_in_page(self):
+        """
+        Providing the link to the approval page in any place the user sees fit.
+        """
+        request = self.macro.request
+        
+        _ = request.getText
+        # Configuration:
+        page_name = unicode(self.get_cfg('comment_approval_page',
+            'CommentsApproval'))
+        page = Page(request,page_name)
 
-        html += u"""
-    <a href="%s">%s (%s)</a>
-        """ % ( APPROVAL_PAGE,_('Pending Comments'), total_waiting)
+        if not page.exists():
+            raise ApproveError('You have to create the approval page! (%s)' % (
+                    page_name))
+        approval_dir = page.getPagePath('', check_create=0)
+        approval_url = wikiutil.quoteWikinameURL(page_name)
 
-    return formatter.rawHTML(html)
+        formatter = request.html_formatter
+        html = ''
+
+        if request.user.isSuperUser():
+            # Get the number of comments waiting for approval
+            files = glob.glob('%s/*.txt' % approval_dir)
+            total_waiting = len(files)
+
+            html = u'<a href="%s">%s (%s)</a>' % (
+                approval_url, _('Pending Comments'), total_waiting)
+
+        return formatter.rawHTML(html)
 
 # Macro function:
-def macro_CommentsAdmin(macro, header_text=u''):
-    return CommentsAdmin(macro.request, header_text)
+def macro_CommentsAdmin(macro):
+    return CommentsAdmin(macro).render_in_page()
