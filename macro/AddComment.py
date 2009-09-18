@@ -20,6 +20,7 @@
 
 #
 # José Lopes <jose.lopes@paxjulia.com>
+# Helder Guerreiro <helder@paxjulia.com>
 #
 # $Id$
 #
@@ -41,8 +42,10 @@ from MoinMoin.Page import Page
 from datetime import datetime
 from random import choice
 from string import letters, digits
-import pickle
+
 import os
+
+from comment_utils import *
 
 # Auxiliary class:
 class AddComment:
@@ -61,21 +64,11 @@ class AddComment:
         if macro.request.request_method == 'POST':
             self.save_comment()
 
-    def get_input( self, arg_name, default = ''  ):
-        return wikiutil.escape(
-                self.macro.request.form.get(arg_name, [default])[0])
-
-    def get_cfg( self, key, default = None ):
-        try:
-            return self.macro.request.cfg[key]
-        except AttributeError:
-            return default
-
     def get_comment(self):
         self.comment = {
-            'user_name' : self.get_input('user_name'),
-            'comment': self.get_input('comment'),
-            'email': self.get_input('email'),
+            'user_name' : get_input(self.macro, 'user_name'),
+            'comment': get_input(self.macro, 'comment'),
+            'email': get_input(self.macro, 'email'),
             }
 
     def errors_check(self):
@@ -95,7 +88,7 @@ class AddComment:
         if len(self.comment['comment']) > 10240:
             errors.append( _('Maximum number of characters is 10240.'))
 
-        if ( self.get_cfg('comment_recaptcha', False) and
+        if ( get_cfg(self.macro, 'comment_recaptcha', False) and
             not self.captcha.is_valid ):
             errors.append( _("I'm not sure you're human! Please fill in the captcha."))
 
@@ -104,16 +97,16 @@ class AddComment:
     def save_comment( self ):
         _ = self.macro.request.getText
 
-        if self.get_input( 'do' ) != u'comment_add':
+        if get_input(self.macro, 'do' ) != u'comment_add':
             # This is not a comment post do nothing
             return
 
-        if self.get_cfg('comment_recaptcha', False ):
+        if get_cfg(self.macro, 'comment_recaptcha', False ):
             import captcha
             self.captcha = captcha.submit (
-                self.get_input('recaptcha_challenge_field'),
-                self.get_input('recaptcha_response_field'),
-                self.get_cfg('comment_recaptcha_private_key'),
+                get_input(self.macro, 'recaptcha_challenge_field'),
+                get_input(self.macro, 'recaptcha_response_field'),
+                get_cfg(self.macro, 'comment_recaptcha_private_key'),
                 self.macro.request.remote_addr )
 
         self.get_comment()
@@ -121,9 +114,9 @@ class AddComment:
 
         if not self.errors: # Save the comment
             # Find out where to save the comment:
-            if self.get_cfg('comment_moderate', True):
+            if get_cfg(self.macro, 'comment_moderate', True):
                 page = Page(self.macro.request,
-                    self.get_cfg('comment_approval_page', 'CommentsApproval'))
+                    get_cfg(self.macro, 'comment_approval_page', 'CommentsApproval'))
                 comment_dir = page.getPagePath('', check_create=0)
             else:
                 page = Page(self.macro.request,self.page_name)
@@ -137,14 +130,12 @@ class AddComment:
             comment = self.comment
             comment['page'] = self.page_name
             comment['time'] = now
-            if self.get_cfg('comment_store_addr', False):
+            if get_cfg(self.macro, 'comment_store_addr', False):
                 comment['remote_addr'] = self.macro.request.remote_addr
 
-            f = open(file_name, 'wb')
-            pickle.dump(comment, f )
-            f.close()
+            write_comment( file_name, comment )
 
-            if self.get_cfg('comment_moderate', True):
+            if get_cfg(self.macro, 'comment_moderate', True):
                 self.msg = _('Your comment awaits moderation. Thank you.')
             else:
                 self.msg = _('Your comment has been posted. Thank you.')
@@ -206,7 +197,7 @@ class AddComment:
                 html += u'<li>%s</li>' % error
             html += u'</ul></div></td></tr>'
 
-        if self.get_cfg('comment_recaptcha', False):
+        if get_cfg(self.macro, 'comment_recaptcha', False):
             import captcha
             html += u"""
             <tr>
@@ -214,7 +205,7 @@ class AddComment:
                 <td>%(recaptcha)s</td>
             </tr>""" % {
             'recaptcha' : captcha.displayhtml(
-                                self.get_cfg('comment_recaptcha_public_key')),
+                                get_cfg(self.macro, 'comment_recaptcha_public_key')),
             'recaptcha_label': _('Are you human?') }
 
         html += """
@@ -228,7 +219,7 @@ class AddComment:
             return self.macro.formatter.rawHTML(html)
         except:
             return self.macro.formatter.escapedText('')
-                
+
 
 # Macro function:
 def macro_AddComment(macro):

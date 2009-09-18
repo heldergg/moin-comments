@@ -20,79 +20,64 @@
 
 #
 # José Lopes <jose.lopes@paxjulia.com>
+# Helder Guerreiro <helder@paxjulia.com>
 #
 # $Id$
 #
 
 """
 Comments Administration Macro
-
-This macro adds an administration functionality to the comments
-feature.
-It can be place anywhere, like for instance the wiki menu, and if the
-user is a SuperUser he will see the link to the comments approval page,
-with the total of comments waiting for approval.
-
- Usage:
-    <<CommentsAdmin>>
 """
 # General imports:
 import os
 import glob
 
 # MoinMoin imports:
-from MoinMoin import user, wikiutil 
+from MoinMoin import user, wikiutil
 from MoinMoin.Page import Page
+
+from comment_utils import *
 
 class ApproveError(Exception): pass
 
-class CommentsAdmin:
-    def __init__(self, macro ):
-        self.macro = macro
-        
-    def get_input( self, arg_name, default = ''  ):
-        return wikiutil.escape(
-        self.macro.request.form.get(arg_name, [default])[0])
-
-    def get_cfg( self, key, default = None ):
-        try:
-            return self.macro.request.cfg[key]
-        except AttributeError:
-            return default
-
-    def render_in_page(self):
-        """
-        Providing the link to the approval page in any place the user sees fit.
-        """
-        request = self.macro.request
-        _ = request.getText
-        
-        # Configuration:
-        page_name = unicode(self.get_cfg('comment_approval_page',
-            'CommentsApproval'))
-        page = Page(request,page_name)
-
-        if not page.exists():
-            raise ApproveError('You have to create the approval page! (%s)' % (
-                    page_name))
-        approval_dir = page.getPagePath('', check_create=0)
-        approval_url = wikiutil.quoteWikinameURL(page_name)
-
-        if request.user.isSuperUser():
-            # Get the number of comments waiting for approval
-            files = glob.glob('%s/*.txt' % approval_dir)
-            total_waiting = len(files)
-
-            html = u'<a href="%s">%s (%s)</a>' % (
-                approval_url, _('Pending Comments'), total_waiting)
-        else:
-            html = u''
-
-        try:
-            return self.macro.formatter.rawHTML(html)
-        except:
-            return self.macro.formatter.escapedText('')
-
-# Macro function:
 def macro_CommentsAdmin(macro):
-    return CommentsAdmin(macro).render_in_page()
+    '''
+    This macro adds an administration functionality to the comments feature.
+    It can be place anywhere, like for instance the wiki menu, and if the
+    user is a SuperUser he will see the link to the comments approval page,
+    with the total of comments waiting for approval.
+
+    Usage:
+        <<CommentsAdmin>>
+    '''
+    request = macro.request
+    formatter = macro.formatter
+    _ = macro.request.getText
+
+    # Configuration:
+    page_name = unicode(get_cfg(macro, 'comment_approval_page',
+        'CommentsApproval'))
+    page = Page(request,page_name)
+
+    if not page.exists():
+        raise ApproveError('You have to create the approval page! (%s)' % (
+                page_name))
+    approval_dir = page.getPagePath('', check_create=0)
+    approval_url = wikiutil.quoteWikinameURL(page_name)
+
+    if request.user.isSuperUser():
+        # Get the number of comments waiting for approval
+        files = glob.glob('%s/*.txt' % approval_dir)
+        total_waiting = len(files)
+
+        html = u'<a href="%s">%s (%s)</a>' % (
+            approval_url, _('Pending Comments'), total_waiting)
+    else:
+        html = u''
+
+    try:
+        return formatter.rawHTML(html)
+    except:
+        return formatter.escapedText('')
+
+

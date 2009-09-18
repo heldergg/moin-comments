@@ -46,6 +46,11 @@ def read_comment( file_name ):
     f.close()
     return comment
 
+def write_comment( file_name, comment ):
+    f = open(file_name, 'wb')
+    pickle.dump(comment, f )
+    f.close()
+
 def get_input( macro, arg_name, default = ''  ):
     '''
     Reads a form field and returns default if the field is missing
