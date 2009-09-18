@@ -94,16 +94,16 @@ class AddComment:
             errors.append( _('You have yet to write your comment.') )
         if len(self.comment['comment']) > 10240:
             errors.append( _('Maximum number of characters is 10240.'))
-            
+
         if ( self.get_cfg('comment_recaptcha', False) and
             not self.captcha.is_valid ):
             errors.append( _("I'm not sure you're human! Please fill in the captcha."))
-            
+
         return errors
 
     def save_comment( self ):
         _ = self.macro.request.getText
-        
+
         if self.get_input( 'do' ) != u'comment_add':
             # This is not a comment post do nothing
             return
@@ -148,7 +148,7 @@ class AddComment:
                 self.msg = _('Your comment awaits moderation. Thank you.')
             else:
                 self.msg = _('Your comment has been posted. Thank you.')
-                
+
             # clean up the fields to display
             self.comment = {
                 'user_name' : '',

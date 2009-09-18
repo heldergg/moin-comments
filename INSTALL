@@ -4,17 +4,22 @@ First checkout the latest version from the repository:
 
 $ svn checkout http://moin-comments.googlecode.com/svn/trunk/ moin-comments-read-only
 
-Next you have to copy the actions and macros to the appropriate directory. Find out what's your ''data_dir'' and:
+Next you have to copy the macros to the appropriate directory. Find out what's
+your ''data_dir'' and:
 
 $ cp moin-comments-read-only/macro/* <data_dir>/plugin/macro/
 
-Under the ''moin-comments-read-only/optional'' you have a cascading style sheet that you may use with moin-comments. If you choose to do so you must copy it to a web accessible place and make it available on the pages that have comments, and comment forms. If you are planning to have comments on most pages you can just include it in the general CSS.
+Under the ''moin-comments-read-only/optional'' you have a cascading style sheet
+that you may use with moin-comments. If you choose to do so you must copy it to
+a web accessible place and make it available on the pages that have comments,
+and comment forms. If you are planning to have comments on most pages you can
+just include it in the global CSS.
 
 == Configuration ==
 
-You have to define on your wiki configuration the following options (default
+You may define on your wiki configuration the following options (default
 values shown):
-    
+
 comment_moderate = True
 comment_approval_page = 'CommentsApproval'
 comment_store_addr = False
@@ -25,11 +30,13 @@ comment_recaptcha_public_key = None
 comment_recaptcha_private_key = None
 comment_recaptcha_use_ssl = False
 
-To have reCAPTCHA support the reCAPTCHA client library (for python) is needed, you can get it from:
+To have reCAPTCHA support the reCAPTCHA client library (for python) is needed,
+you can get it from:
 
 http://code.google.com/p/recaptcha
 http://code.google.com/p/recaptcha/source/browse/trunk/recaptcha-plugins/python/recaptcha/client/captcha.py
 
-Naturally you must also be registed in http://recaptcha.net/ to get a pair of public/private keys for the reCAPTCHA API.
+Naturally you must also be registed in http://recaptcha.net/ to get a pair of
+public/private keys for the reCAPTCHA API.
 
 $Id$

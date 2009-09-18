@@ -20,6 +20,7 @@
 
 #
 # José Lopes <jose.lopes@paxjulia.com>
+# Helder Guerreiro <helder@paxjulia.com>
 #
 # $Id$
 #
@@ -31,142 +32,125 @@ This macro display the comments page.
 It collects the comments files and displays its content.
 
 Usage:
-    <<Comments(@PAGE@)>> on the Comments page
+    <<Comments([page_name])>>
 """
 
 # General imports:
 import os
 import glob
-import pickle
-from string import letters, digits
-from random import choice
 
 # MoinMoin imports
 from MoinMoin.Page import Page
-from MoinMoin import wikiutil
 
-def read_comment( file_name ):
-    f = open(file_name, 'r')
-    comment = pickle.load(f)
-    f.close()
-    return comment
+# Utils
+from comment_utils import *
 
-# Auxiliary function:
-class Comments:
-    def __init__(self, macro, page_name):
-        self.macro = macro
-        
-        if page_name == u'':
-            # By default show the comments for the current page
-            page_name = macro.formatter.page.page_name
-        self.page_name = page_name
+# Auxiliary functions:
 
-    def get_input( self, arg_name, default = ''  ):
-        return wikiutil.escape(
-                self.macro.request.form.get(arg_name, [default])[0])
-
-    def get_cfg( self, key, default = None ):
-        try:
-            return self.macro.request.cfg[key]
-        except AttributeError:
-            return default
-
-
-    def comment_html(self, comment):
-        _ = self.macro.request.getText
-        return '''<table>
+def comment_html(request, comment):
+    _ = request.getText
+    return '''<table>
     <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
     <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
     <tr><td colspan=2>%(comment_text)s</td></tr>
     </table>''' % {
-        'name': _('Name:'),
-        'comment_name': comment['user_name'],
-        'time': _('Time:'),
-        'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
-        'comment_text': '<p>'.join( comment['comment'].split('\n') ),
-        }
+    'name': _('Name:'),
+    'comment_name': comment['user_name'],
+    'time': _('Time:'),
+    'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
+    'comment_text': '<p>'.join( comment['comment'].split('\n') ),
+    }
 
-    def render_in_page(self):
-        """
-        Returns comments in page context.
-        """
-        _ = self.macro.request.getText
-        
-        def navbar(page_number, max_pages, page_uri):
-            if max_pages == 1:
-                return ''
-            
-            html = ['<div class="navbar">']
-            if page_number > 1:
-                html.append('<div class="prevcmt">')
-                html.append('<a href="http://%s">%s</a>&nbsp;&nbsp;&nbsp;' %
-                        (page_uri,_('|&lt;')))
-                html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;&nbsp;' %
-                        (page_uri,page_number-1,_('&lt;&lt;')))
-                html.append('</div>')
-            
-            if page_number < max_pages:
-                html.append('<div class="nextcmt">')
-                html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;&nbsp;' %
-                        (page_uri,page_number+1,_('&gt;&gt;')))
-                html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;&nbsp;' %
-                        (page_uri,max_pages,_('&gt;|')))
-                html.append('</div>')
+def navbar(page_number, max_pages, page_uri):
+    if max_pages == 1:
+        return ''
 
-            html.append('</div>')
+    html = ['<div class="navbar">']
+    if page_number > 1:
+        html.append('<div class="prevcmt">')
+        html.append('<a href="http://%s">%s</a>&nbsp;&nbsp;' %
+                (page_uri,_('|&lt;')))
+        html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
+                (page_uri,page_number-1,_('&lt;&lt;')))
+        html.append('</div>')
 
-            return '\n'.join(html)
-            
-        # Get the configuration:
+    if page_number < max_pages:
+        html.append('<div class="nextcmt">')
+        html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
+                (page_uri,page_number+1,_('&gt;&gt;')))
+        html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
+                (page_uri,max_pages,_('&gt;|')))
+        html.append('</div>')
 
-        page = Page(self.macro.request, self.page_name )
-        comments_dir = page.getPagePath("comments", check_create=1)
+    html.append('</div>')
 
-        files = glob.glob(os.path.join(comments_dir,'*.txt'))
-        files.sort()
+    return '\n'.join(html)
 
-        html = [u'<a name="comment_section"></a>']
-        if not files:
-            html.append(u'<p>%s</p>' % _('There are no comments'))
-        else:
-            # Do the pagination
-            cmt_per_page = int(self.get_cfg('comment_cmt_per_page',50))
-
-            if cmt_per_page:
-                page_uri = self.macro.request.splitURI(self.macro.request.url)[0]
-
-                number_messages = len(files)
-                max_pages = ( number_messages / cmt_per_page +
-                            (1 if number_messages % cmt_per_page else 0 ))
-                try:
-                    page_number = int(self.get_input( 'page_number', 1 ))
-                except ValueError:
-                    page_number = 1
-                if page_number > max_pages:
-                    page_number = max_pages
-                elif page_number < 1:
-                    page_number = 1
-
-                first = (page_number - 1) * cmt_per_page
-                last  = first + cmt_per_page
-
-                files = files[first:last]
-            
-            # Get the file names
-            comments = [ read_comment(Xi) for Xi in files]
-
-            for comment in comments:
-                html.append( u"%s" % self.comment_html( comment ) )
-
-            if cmt_per_page:
-                html.append(navbar(page_number, max_pages, page_uri))
-        
-        try:
-            return self.macro.formatter.rawHTML('\n'.join(html))
-        except:
-            return self.macro.formatter.escapedText('')
-                
-
-# Macro function:
 def macro_Comments(macro, page_name=u''):
-    return Comments(macro, page_name).render_in_page()
+    '''
+    Usage:
+
+        <<Comments(page_name)>>
+        Shows the comments of page 'page_name'
+    or
+        <<Comments()>>
+        Shows the page of the current page.
+    '''
+    _ = macro.request.getText
+    request = macro.request
+    formatter = macro.formatter
+
+
+    # By default show the comments for the current page
+    if page_name == u'':
+        page_name = macro.formatter.page.page_name
+
+    # Get the configuration:
+    page = Page(request, page_name )
+    comments_dir = page.getPagePath("comments", check_create=1)
+
+    # Get the page_name comment list
+    files = glob.glob(os.path.join(comments_dir,'*.txt'))
+    files.sort()
+
+    # Compose the comments markup
+    html = [u'<a name="comment_section"></a>']
+    if not files:
+        html.append(u'<p>%s</p>' % _('There are no comments'))
+    else:
+        # Do the pagination
+        cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page',50)
+
+        if cmt_per_page:
+            page_uri = request.splitURI(request.url)[0]
+
+            number_messages = len(files)
+            max_pages = ( number_messages / cmt_per_page +
+                        (1 if number_messages % cmt_per_page else 0 ))
+            try:
+                page_number = get_input_int(macro, 'page_number', 1 )
+            except ValueError:
+                page_number = 1
+            if page_number > max_pages:
+                page_number = max_pages
+            elif page_number < 1:
+                page_number = 1
+
+            first = (page_number - 1) * cmt_per_page
+            last  = first + cmt_per_page
+
+            files = files[first:last]
+
+        # Get the file names
+        comments = [ read_comment(Xi) for Xi in files]
+
+        for comment in comments:
+            html.append( u"%s" % comment_html(request, comment ) )
+
+        if cmt_per_page:
+            html.append(navbar(page_number, max_pages, page_uri))
+
+    try:
+        return formatter.rawHTML('\n'.join(html))
+    except:
+        return formatter.escapedText('')

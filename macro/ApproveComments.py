@@ -42,17 +42,12 @@ from MoinMoin.Page import Page
 from MoinMoin import wikiutil
 
 import os
-import pickle
 from datetime import datetime
 import glob
 
-class ApproveError(Exception): pass
+from comment_utils import *
 
-def read_comment( file_name ):
-    f = open(file_name, 'r')
-    comment = pickle.load(f)
-    f.close()
-    return comment
+class ApproveError(Exception): pass
 
 
 class ApproveComments:
@@ -90,11 +85,11 @@ class ApproveComments:
 
     def delete_comment(self):
         _ = self.macro.request.getText
-        
+
         file_name = self.get_input( 'file' )
         os.remove(os.path.join(self.approval_dir, file_name))
         self.msg.append(_('Comment deleted'))
-    
+
     def approve_comment(self):
         _ = self.macro.request.getText
 
@@ -102,19 +97,19 @@ class ApproveComments:
         origin = os.path.join(self.approval_dir, self.get_input('file'))
         comment = read_comment( origin )
 
-        # Destination 
+        # Destination
         page = Page(self.macro.request, comment['page'] )
         if not page.exists():
             self.msg.append(_('The page this comment was written for don\'t exist any more'))
             return
-        
+
         dest_dir = page.getPagePath("comments", check_create=1)
         destination = os.path.join(dest_dir,self.get_input('file'))
 
         # Rename the file:
         os.rename(origin, destination)
         self.msg.append(_('Comment approved'))
-        
+
     def render_in_page(self):
 
         def cmp_page_time( a, b ):
@@ -128,9 +123,9 @@ class ApproveComments:
                 elif a['time'] > b['time']:
                     return 1
             return 0
-        
+
         _ = self.macro.request.getText
-        
+
         if self.page_name != self.macro.formatter.page.page_name:
             return self.macro.formatter.text(
              _('Sorry, but the  ApproveComments macro must be '
@@ -144,11 +139,11 @@ class ApproveComments:
             for m in self.msg:
                  html.append('<li>%s</li>' % m)
             html.append('</ul></div>')
-        
+
         files = glob.glob(os.path.join(self.approval_dir,'*.txt'))
         if not files:
             html.append(u'<p>%s</p>' % _("There's no comment awaiting for moderation."))
-        else:            
+        else:
             comments = []
 
             # Read the comments:
@@ -156,7 +151,7 @@ class ApproveComments:
                 comment = read_comment( file_name )
                 comment['file_name'] = file_name
                 comments.append(comment)
-                
+
             # Sort the coments by page, then by time
             comments.sort(cmp_page_time)
 
