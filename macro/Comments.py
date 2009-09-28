@@ -125,8 +125,11 @@ def macro_Comments(macro, page_name=u''):
             page_uri = request.splitURI(request.url)[0]
 
             number_messages = len(files)
-            max_pages = ( number_messages / cmt_per_page +
-                        (1 if number_messages % cmt_per_page else 0 ))
+            if number_messages % cmt_per_page:
+                offset = 1
+            else:
+                offset = 0
+            max_pages = number_messages / cmt_per_page + offset
             try:
                 page_number = get_input_int(macro, 'page_number', 1 )
             except ValueError:
