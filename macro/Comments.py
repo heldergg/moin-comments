@@ -61,7 +61,9 @@ def comment_html(request, comment):
     'comment_text': '<p>'.join( comment['comment'].split('\n') ),
     }
 
-def navbar(page_number, max_pages, page_uri):
+def navbar(request, page_number, max_pages, page_uri):
+    _ = request.getText
+    
     if max_pages == 1:
         return ''
 
@@ -151,7 +153,7 @@ def macro_Comments(macro, page_name=u''):
             html.append( u"%s" % comment_html(request, comment ) )
 
         if cmt_per_page:
-            html.append(navbar(page_number, max_pages, page_uri))
+            html.append(navbar(request, page_number, max_pages, page_uri))
 
     try:
         return formatter.rawHTML('\n'.join(html))
