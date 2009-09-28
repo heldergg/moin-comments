@@ -38,6 +38,7 @@ Usage:
 # MoinMoin imports:
 from MoinMoin import wikiutil
 from MoinMoin.Page import Page
+from MoinMoin.mail import sendmail
 
 from datetime import datetime
 from random import choice
@@ -139,6 +140,15 @@ class AddComment:
                 self.msg = _('Your comment awaits moderation. Thank you.')
             else:
                 self.msg = _('Your comment has been posted. Thank you.')
+                
+            moderators = get_cfg(self.macro, 'comment_moderators', None)
+            if moderators:
+                # Send an email to the moderators
+                print moderators, moderators.split(',')
+                sendmail.sendmail( self.macro.request, moderators.split(','),
+                 _('New comment awaits moderation'),
+                 _('New comment awaits moderation:\n\nFrom: %(user_name)s\nMessage:\n%(comment)s' %
+                    self.comment ))
 
             # clean up the fields to display
             self.comment = {
