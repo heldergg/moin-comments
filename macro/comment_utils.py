@@ -59,7 +59,7 @@ def get_input( macro, arg_name, default = ''  ):
 
 def get_input_int( macro, arg_name, default = 0  ):
     try:
-        return get_input( macro, arg_name, default )
+        return int(get_input( macro, arg_name, default ))
     except ValueError:
         return 0
 

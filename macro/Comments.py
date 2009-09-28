@@ -122,7 +122,7 @@ def macro_Comments(macro, page_name=u''):
     else:
         # Do the pagination
         cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page',50)
-
+        
         if cmt_per_page:
             page_uri = request.splitURI(request.url)[0]
 
@@ -146,7 +146,7 @@ def macro_Comments(macro, page_name=u''):
 
             files = files[first:last]
 
-        # Get the file names
+        # Get the comments contents
         comments = [ read_comment(Xi) for Xi in files]
 
         for comment in comments:
