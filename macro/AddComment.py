@@ -156,7 +156,7 @@ class AddComment:
                 self.msg = _('Your comment has been posted. Thank you.')
                 
             moderators = get_cfg(self.macro, 'comment_moderators', None)
-            if moderators:
+            if moderators and not self.passpartout:
                 # Send an email to the moderators
                 sendmail.sendmail( self.macro.request, moderators.split(','),
                  _('New comment awaits moderation'),
