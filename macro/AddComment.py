@@ -39,7 +39,7 @@ Usage:
 from MoinMoin import wikiutil
 from MoinMoin.Page import Page
 from MoinMoin.mail import sendmail
-import MoinMoin
+from MoinMoin.wikidicts import Group
 
 from datetime import datetime
 from random import choice
@@ -59,6 +59,14 @@ class AddComment:
         self.msg = ''
         self.reset_comment()
         self.errors = []
+
+        passpartout_group = Group( macro.request,
+            get_cfg(macro, 'comment_passpartout_group', 'PasspartoutGroup' ))
+
+        if passpartout_group.has_member(self.user.name):
+            self.passpartout = True
+        else:
+            self.passpartout = False
 
         if macro.request.request_method == 'POST':
             self.save_comment()
@@ -95,8 +103,8 @@ class AddComment:
         if len(self.comment['comment']) > 10240:
             errors.append( _('Maximum number of characters is 10240.'))
 
-        if ( get_cfg(self.macro, 'comment_recaptcha', False) and
-            not self.captcha.is_valid ):
+        if ( get_cfg(self.macro, 'comment_recaptcha', False) and not self.passpartout
+            and not self.captcha.is_valid):
             errors.append( _("I'm not sure you're human! Please fill in the captcha."))
 
         return errors
@@ -108,7 +116,7 @@ class AddComment:
             # This is not a comment post do nothing
             return
 
-        if get_cfg(self.macro, 'comment_recaptcha', False ):
+        if get_cfg(self.macro, 'comment_recaptcha', False ) and not self.passpartout:
             import captcha
             self.captcha = captcha.submit (
                 get_input(self.macro, 'recaptcha_challenge_field'),
@@ -121,7 +129,7 @@ class AddComment:
 
         if not self.errors: # Save the comment
             # Find out where to save the comment:
-            if get_cfg(self.macro, 'comment_moderate', True):
+            if get_cfg(self.macro, 'comment_moderate', True) and not self.passpartout:
                 page = Page(self.macro.request,
                     get_cfg(self.macro, 'comment_approval_page', 'CommentsApproval'))
                 comment_dir = page.getPagePath('', check_create=0)
@@ -142,7 +150,7 @@ class AddComment:
 
             write_comment( file_name, comment )
 
-            if get_cfg(self.macro, 'comment_moderate', True):
+            if get_cfg(self.macro, 'comment_moderate', True) and not self.passpartout:
                 self.msg = _('Your comment awaits moderation. Thank you.')
             else:
                 self.msg = _('Your comment has been posted. Thank you.')
@@ -150,7 +158,6 @@ class AddComment:
             moderators = get_cfg(self.macro, 'comment_moderators', None)
             if moderators:
                 # Send an email to the moderators
-                print moderators, moderators.split(',')
                 sendmail.sendmail( self.macro.request, moderators.split(','),
                  _('New comment awaits moderation'),
                  _('New comment awaits moderation:\n\nFrom: %(user_name)s\nMessage:\n%(comment)s' %
@@ -209,7 +216,7 @@ class AddComment:
                 html += u'<li>%s</li>' % error
             html += u'</ul></div></td></tr>'
 
-        if get_cfg(self.macro, 'comment_recaptcha', False):
+        if get_cfg(self.macro, 'comment_recaptcha', False) and not self.passpartout:
             import captcha
             html += u"""
             <tr>
