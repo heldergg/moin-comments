@@ -39,6 +39,7 @@ Usage:
 from MoinMoin import wikiutil
 from MoinMoin.Page import Page
 from MoinMoin.mail import sendmail
+import MoinMoin
 
 from datetime import datetime
 from random import choice
@@ -52,18 +53,23 @@ from comment_utils import *
 class AddComment:
     def __init__(self, macro ):
         self.macro = macro
+        self.user = macro.request.user
         self.page_name = macro.formatter.page.page_name
 
         self.msg = ''
-        self.comment = {
-                'user_name' : '',
-                'comment': '',
-                'email': '',
-                }
+        self.reset_comment()
         self.errors = []
 
         if macro.request.request_method == 'POST':
             self.save_comment()
+
+    def reset_comment(self):
+        '''Resets the comment dict to default a value'''
+        self.comment = {
+                'user_name' : self.user.name,
+                'comment': '',
+                'email': '',
+                }
 
     def get_comment(self):
         self.comment = {
@@ -151,11 +157,7 @@ class AddComment:
                     self.comment ))
 
             # clean up the fields to display
-            self.comment = {
-                'user_name' : '',
-                'comment': '',
-                'email': '',
-                }
+            self.reset_comment()
 
     def renderInPage(self):
         """
