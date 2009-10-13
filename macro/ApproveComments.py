@@ -110,6 +110,9 @@ class ApproveComments:
         os.rename(origin, destination)
         self.msg.append(_('Comment approved'))
 
+        # Notify page subscribers:
+        notify_subscribers(self.macro, comment)
+        
     def render_in_page(self):
 
         def cmp_page_time( a, b ):

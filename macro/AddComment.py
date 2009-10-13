@@ -53,6 +53,7 @@ from comment_utils import *
 class AddComment:
     def __init__(self, macro ):
         self.macro = macro
+        self.page = macro.request.page
         self.user = macro.request.user
         self.page_name = macro.formatter.page.page_name
 
@@ -64,9 +65,12 @@ class AddComment:
             get_cfg(macro, 'comment_passpartout_group', 'PasspartoutGroup' ))
 
         if passpartout_group.has_member(self.user.name):
-            self.passpartout = True
+            passpartout = True
         else:
-            self.passpartout = False
+            passpartout = False
+
+        self.passpartout = passpartout
+        self.moderate = get_cfg(self.macro, 'comment_moderate', True) and not passpartout
 
         if macro.request.request_method == 'POST':
             self.save_comment()
@@ -129,14 +133,17 @@ class AddComment:
 
         if not self.errors: # Save the comment
             # Find out where to save the comment:
-            if get_cfg(self.macro, 'comment_moderate', True) and not self.passpartout:
+            if self.moderate:
+                # This commet will be added to the moderation queue
                 page = Page(self.macro.request,
                     get_cfg(self.macro, 'comment_approval_page', 'CommentsApproval'))
                 comment_dir = page.getPagePath('', check_create=0)
             else:
+                # The comment will be immediately posted
                 page = Page(self.macro.request,self.page_name)
                 comment_dir = page.getPagePath('comments', check_create=1)
 
+            # Compose the comment structure and write it
             now = datetime.now()
             random_str =  ''.join([choice(letters + digits) for i in range(20)])
             comment_file = '%s-%s.txt' % (now.strftime("%s"), random_str)
@@ -148,20 +155,25 @@ class AddComment:
             if get_cfg(self.macro, 'comment_store_addr', False):
                 comment['remote_addr'] = self.macro.request.remote_addr
 
-            write_comment( file_name, comment )
-
-            if get_cfg(self.macro, 'comment_moderate', True) and not self.passpartout:
+            if self.moderate:
                 self.msg = _('Your comment awaits moderation. Thank you.')
             else:
                 self.msg = _('Your comment has been posted. Thank you.')
-                
-            moderators = get_cfg(self.macro, 'comment_moderators', None)
-            if moderators and not self.passpartout:
-                # Send an email to the moderators
-                sendmail.sendmail( self.macro.request, moderators.split(','),
-                 _('New comment awaits moderation'),
-                 _('New comment awaits moderation:\n\nFrom: %(user_name)s\nMessage:\n%(comment)s' %
-                    self.comment ))
+
+            write_comment( file_name, comment )
+            
+            if self.moderate:
+                # If we have defined a list of moderators to notify and this user is
+                # moderated then a message is sent to the moderator list
+                moderators = get_cfg(self.macro, 'comment_moderators', None)
+                if moderators:
+                    sendmail.sendmail( self.macro.request, moderators.split(','),
+                    _('New comment awaits moderation for page %(page)s' % self.comment ),
+                    _('New comment awaits moderation:\n\nPage: %(page)s\nFrom: %(user_name)s\nMessage:\n\n%(comment)s\n\n--' %
+                        self.comment ))
+            else:
+                # Send notification to page subscribers if the page
+                notify_subscribers(self.macro, self.comment)
 
             # clean up the fields to display
             self.reset_comment()

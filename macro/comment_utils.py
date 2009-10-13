@@ -35,6 +35,8 @@ Utility functions to use with the comments macros.
 
 import pickle
 from MoinMoin import wikiutil
+from MoinMoin.Page import Page
+from MoinMoin.mail import sendmail
 
 ##
 # Functions
@@ -77,3 +79,25 @@ def get_cfg_int( macro, key, default = 0 ):
         return int(get_cfg( macro, key, default ))
     except ValueError:
         return default
+
+def notify_subscribers(macro, comment):
+    '''Notify page subscribers'''
+    subscribed_notify = get_cfg(macro, 'comment_subscribed_notify', False)
+    if not subscribed_notify:
+        return
+
+    request = macro.request
+    _ = macro.request.getText
+    page = Page(request, comment['page'])
+    subscribers = page.getSubscribers(request)
+
+    mailing_list = []
+    for lang in subscribers.keys():
+        for person in subscribers[lang]:
+            mailing_list.append(person)
+            
+    if mailing_list:
+        sendmail.sendmail( request, mailing_list,
+        _('New comment was posted in page %(page)s' % comment),
+        _('New comment awaits moderation:\n\nPage: %(page)s\nFrom: %(user_name)s\nMessage:\n\n%(comment)s\n\n--' %
+        comment ))
