@@ -39,7 +39,6 @@ Usage:
 from MoinMoin import wikiutil
 from MoinMoin.Page import Page
 from MoinMoin.mail import sendmail
-from MoinMoin.wikidicts import Group
 
 from datetime import datetime
 from random import choice
@@ -47,7 +46,7 @@ from string import letters, digits
 
 import os
 
-from comment_utils import *
+from comment_utils import get_cfg, get_input, write_comment, notify_subscribers
 
 # Auxiliary class:
 class AddComment:
@@ -61,18 +60,18 @@ class AddComment:
         self.reset_comment()
         self.errors = []
 
-        passpartout_group = Group( macro.request,
-            get_cfg(macro, 'comment_passpartout_group', 'PasspartoutGroup' ))
+        passpartout_group = macro.request.groups[
+            get_cfg(macro, 'comment_passpartout_group', 'PasspartoutGroup' )]
 
-        if passpartout_group.has_member(self.user.name):
+        if self.user.name in passpartout_group:
             passpartout = True
         else:
             passpartout = False
 
         self.passpartout = passpartout
-        self.moderate = get_cfg(self.macro, 'comment_moderate', True) and not passpartout
+        self.moderate = get_cfg(macro, 'comment_moderate', True) and not passpartout
 
-        if macro.request.request_method == 'POST':
+        if macro.request.method == 'POST':
             self.save_comment()
 
     def reset_comment(self):
@@ -161,7 +160,7 @@ class AddComment:
                 self.msg = _('Your comment has been posted. Thank you.')
 
             write_comment( file_name, comment )
-            
+
             if self.moderate:
                 # If we have defined a list of moderators to notify and this user is
                 # moderated then a message is sent to the moderator list
@@ -186,7 +185,7 @@ class AddComment:
         html = u'''<div class="comments_form">
         <form method="POST" action="%(page_uri)s">
         <input type="hidden" name="do" value="comment_add">
-        <table>''' % { 'page_uri': self.macro.request.request_uri }
+        <table>''' % { 'page_uri': self.macro.request.request.url }
 
         html += '''
             <tr>

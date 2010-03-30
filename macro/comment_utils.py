@@ -57,7 +57,7 @@ def get_input( macro, arg_name, default = ''  ):
     '''
     Reads a form field and returns default if the field is missing
     '''
-    return wikiutil.escape(macro.request.form.get(arg_name, [default])[0])
+    return wikiutil.escape(macro.request.form.get(arg_name, default))
 
 def get_input_int( macro, arg_name, default = 0  ):
     try:
@@ -95,7 +95,7 @@ def notify_subscribers(macro, comment):
     for lang in subscribers.keys():
         for person in subscribers[lang]:
             mailing_list.append(person)
-            
+
     if mailing_list:
         sendmail.sendmail( request, mailing_list,
         _('New comment was posted in page %(page)s' % comment),
