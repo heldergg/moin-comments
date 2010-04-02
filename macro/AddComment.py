@@ -39,6 +39,7 @@ Usage:
 from MoinMoin import wikiutil
 from MoinMoin.Page import Page
 from MoinMoin.mail import sendmail
+from MoinMoin.datastruct.backends import GroupDoesNotExistError
 
 from datetime import datetime
 from random import choice
@@ -60,12 +61,15 @@ class AddComment:
         self.reset_comment()
         self.errors = []
 
-        passpartout_group = macro.request.groups[
-            get_cfg(macro, 'comment_passpartout_group', 'PasspartoutGroup' )]
+        try:
+            passpartout_group = macro.request.groups[
+                get_cfg(macro, 'comment_passpartout_group', 'PasspartoutGroup' )]
 
-        if self.user.name in passpartout_group:
-            passpartout = True
-        else:
+            if self.user.name in passpartout_group:
+                passpartout = True
+            else:
+                passpartout = False
+        except GroupDoesNotExistError:
             passpartout = False
 
         self.passpartout = passpartout
