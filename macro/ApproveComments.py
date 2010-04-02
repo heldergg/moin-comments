@@ -34,7 +34,14 @@ Usage:
     <<ApproveComments()>>
 
 Requirements:
-    You must define the correct path at WORK_DIR
+    You have to create a page where the comments are stored for moderation. This
+    page is defined with the configuration variable:
+
+        comment_approval_page
+
+    And by default has a value of:
+
+        CommentsApproval
 """
 
 # General imports:
@@ -45,7 +52,7 @@ import os
 from datetime import datetime
 import glob
 
-from comment_utils import *
+from comment_utils import get_cfg, get_input, read_comment, notify_subscribers
 
 class ApproveError(Exception): pass
 
@@ -53,8 +60,8 @@ class ApproveError(Exception): pass
 class ApproveComments:
     def __init__(self, macro ):
         self.macro = macro
-        self.page_name = unicode(self.get_cfg('comment_approval_page',
-                        'CommentsApproval'))
+        self.page_name = get_cfg(macro, 'comment_approval_page',
+                              'CommentsApproval')
         self.msg = []
 
         if self.page_name != macro.formatter.page.page_name:
@@ -67,26 +74,16 @@ class ApproveComments:
             raise ApproveError('You have to create the approval page!')
         self.approval_dir = page.getPagePath('', check_create=0)
 
-        if macro.request.request_method == 'POST':
-            if self.get_input( 'do' ) == u'comment_delete':
+        if macro.request.method == 'POST':
+            if get_input( macro, 'do' ) == u'comment_delete':
                 self.delete_comment()
-            if self.get_input( 'do' ) == u'comment_approve':
+            if get_input( macro, 'do' ) == u'comment_approve':
                 self.approve_comment()
-
-    def get_input( self, arg_name, default = ''  ):
-        return wikiutil.escape(
-                self.macro.request.form.get(arg_name, [default])[0])
-
-    def get_cfg( self, key, default = None ):
-        try:
-            return self.macro.request.cfg[key]
-        except AttributeError:
-            return default
 
     def delete_comment(self):
         _ = self.macro.request.getText
 
-        file_name = self.get_input( 'file' )
+        file_name = get_input( self.macro, 'file' )
         os.remove(os.path.join(self.approval_dir, file_name))
         self.msg.append(_('Comment deleted'))
 
@@ -94,7 +91,7 @@ class ApproveComments:
         _ = self.macro.request.getText
 
         # Source
-        origin = os.path.join(self.approval_dir, self.get_input('file'))
+        origin = os.path.join(self.approval_dir, get_input(self.macro, 'file'))
         comment = read_comment( origin )
 
         # Destination
@@ -104,7 +101,7 @@ class ApproveComments:
             return
 
         dest_dir = page.getPagePath("comments", check_create=1)
-        destination = os.path.join(dest_dir,self.get_input('file'))
+        destination = os.path.join(dest_dir,get_input(self.macro, 'file'))
 
         # Rename the file:
         os.rename(origin, destination)
@@ -112,7 +109,7 @@ class ApproveComments:
 
         # Notify page subscribers:
         notify_subscribers(self.macro, comment)
-        
+
     def render_in_page(self):
 
         def cmp_page_time( a, b ):
@@ -171,7 +168,7 @@ class ApproveComments:
                     'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
                     'comment_name': comment['user_name'],
                     })
-                if self.get_cfg('comment_store_addr', False):
+                if get_cfg(self.macro, 'comment_store_addr', False):
                     html.append(u'  <tr><td>%(remote_addr)s</td><td>%(comment_addr)s</td></tr>' % {
                     'remote_addr': _('Remote address:'),
                     'comment_addr': comment['remote_addr'],
@@ -195,7 +192,7 @@ class ApproveComments:
 </div><br />''' % {
                 'comment_text': '<p>'.join( comment['comment'].split('\n') ),
                 'comment_file': os.path.basename(comment['file_name']),
-                'page_uri': self.macro.request.request_uri,
+                'page_uri': self.macro.request.request.url,
                 'button_delete': _('Delete'),
                 'button_accept': _('Accept'),
                 } )
