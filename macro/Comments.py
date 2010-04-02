@@ -70,17 +70,17 @@ def navbar(request, page_number, max_pages, page_uri):
     html = ['<div class="navbar">']
     if page_number > 1:
         html.append('<div class="prevcmt">')
-        html.append('<a href="http://%s">%s</a>&nbsp;&nbsp;' %
+        html.append('<a href="%s">%s</a>&nbsp;&nbsp;' %
                 (page_uri,_('|&lt;')))
-        html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
+        html.append('<a href="%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
                 (page_uri,page_number-1,_('&lt;&lt;')))
         html.append('</div>')
 
     if page_number < max_pages:
         html.append('<div class="nextcmt">')
-        html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
+        html.append('<a href="%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
                 (page_uri,page_number+1,_('&gt;&gt;')))
-        html.append('<a href="http://%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
+        html.append('<a href="%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
                 (page_uri,max_pages,_('&gt;|')))
         html.append('</div>')
 
@@ -124,7 +124,6 @@ def macro_Comments(macro, page_name=u''):
         cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page',50)
 
         if cmt_per_page:
-            print request.url
             page_uri = request.url.split('?')[0]
 
             number_messages = len(files)

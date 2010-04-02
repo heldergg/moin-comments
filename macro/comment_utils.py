@@ -57,7 +57,10 @@ def get_input( macro, arg_name, default = ''  ):
     '''
     Reads a form field and returns default if the field is missing
     '''
-    return wikiutil.escape(macro.request.form.get(arg_name, default))
+    if arg_name in macro.request.values:
+        return wikiutil.escape(macro.request.values[arg_name])
+    else:
+        return default
 
 def get_input_int( macro, arg_name, default = 0  ):
     try:
