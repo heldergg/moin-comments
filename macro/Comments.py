@@ -63,7 +63,7 @@ def comment_html(request, comment):
 
 def navbar(request, page_number, max_pages, page_uri):
     _ = request.getText
-    
+
     if max_pages == 1:
         return ''
 
@@ -120,11 +120,12 @@ def macro_Comments(macro, page_name=u''):
     if not files:
         html.append(u'<p>%s</p>' % _('There are no comments'))
     else:
-        # Do the pagination
+        # Pagination
         cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page',50)
-        
+
         if cmt_per_page:
-            page_uri = request.splitURI(request.url)[0]
+            print request.url
+            page_uri = request.url.split('?')[0]
 
             number_messages = len(files)
             if number_messages % cmt_per_page:
