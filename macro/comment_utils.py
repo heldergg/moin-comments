@@ -102,5 +102,5 @@ def notify_subscribers(macro, comment):
     if mailing_list:
         sendmail.sendmail( request, mailing_list,
         _('New comment was posted in page %(page)s' % comment),
-        _('New comment awaits moderation:\n\nPage: %(page)s\nFrom: %(user_name)s\nMessage:\n\n%(comment)s\n\n--' %
+        _('New comment was posted in page:\n\nPage: %(page)s\nFrom: %(user_name)s\nMessage:\n\n%(comment)s\n\n--' %
         comment ))
