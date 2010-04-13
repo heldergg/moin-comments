@@ -75,7 +75,13 @@ class AddComment:
         self.passpartout = passpartout
         self.moderate = get_cfg(macro, 'comment_moderate', True) and not passpartout
 
-        if macro.request.method == 'POST':
+        # Check if the user can create new comments:
+        only_logged = get_cfg(self.macro, 'comment_only_logged', False)
+
+        self.can_create = not only_logged or self.user.exists()
+
+        # Save the comment
+        if macro.request.method == 'POST' and self.can_create:
             self.save_comment()
 
     def reset_comment(self):
@@ -181,9 +187,9 @@ class AddComment:
             # clean up the fields to display
             self.reset_comment()
 
-    def renderInPage(self):
+    def get_html(self):
         """
-        Render comments form in page context.
+        Generate the comment form
         """
         _ = self.macro.request.getText
         html = u'''<div class="comments_form">
@@ -249,10 +255,20 @@ class AddComment:
             </tr>
         </table></form></div>""" % { 'label': _('Send comment') }
 
-        try:
-            return self.macro.formatter.rawHTML(html)
-        except:
+        return html
+
+    def renderInPage(self):
+        """
+        Render comments form in page context.
+        """
+        # Comments restricted to logged-in users
+
+        if self.can_create:
+            return self.macro.formatter.rawHTML(self.get_html())
+        else:
             return self.macro.formatter.escapedText('')
+
+
 
 
 # Macro function:
