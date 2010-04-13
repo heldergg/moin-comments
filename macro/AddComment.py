@@ -32,7 +32,7 @@ Add Comment Macro
 This macro places the comment form on the page.
 
 Usage:
-    <<AddComment(Add a Comment title, Add button label)>>
+    <<AddComment>>
 """
 
 # MoinMoin imports:
@@ -77,8 +77,11 @@ class AddComment:
 
         # Check if the user can create new comments:
         only_logged = get_cfg(self.macro, 'comment_only_logged', False)
+        follow_acl  = get_cfg(self.macro, 'comment_follow_acl', False)
+        may_write = self.user.may.write(self.page_name)
 
-        self.can_create = not only_logged or self.user.exists()
+        self.can_create = ((not follow_acl or (follow_acl and may_write )) and
+                           (not only_logged or self.user.exists()))
 
         # Save the comment
         if macro.request.method == 'POST' and self.can_create:
