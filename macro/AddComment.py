@@ -45,6 +45,7 @@ from datetime import datetime
 from random import choice
 from string import letters, digits
 
+import platform
 import os
 
 from comment_utils import get_cfg, get_input, write_comment, notify_subscribers
@@ -157,8 +158,19 @@ class AddComment:
 
             # Compose the comment structure and write it
             now = datetime.now()
+            if platform.system() == 'Windows':
+                # Windows doesn't return seconds since epoch, because of this the
+                # comments are unordered on this platform. To fix this I'll 
+                # calculate the number of seconds since the unix epoch on windows
+                # this way the comment file names are consistent and interchangeable 
+                # between platforms.
+                td = now - datetime( 1970, 1, 1, 0,0 )
+                seconds = '%d' % (td.seconds + td.days * 24 * 3600 - 3600) 
+            else:
+                seconds = now.strftime("%s")
+
             random_str =  ''.join([choice(letters + digits) for i in range(20)])
-            comment_file = '%s-%s.txt' % (now.strftime("%s"), random_str)
+            comment_file = '%s-%s.txt' % (seconds, random_str)
             file_name = os.path.join(comment_dir, comment_file)
 
             comment = self.comment
