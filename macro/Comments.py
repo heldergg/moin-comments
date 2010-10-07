@@ -47,8 +47,9 @@ from comment_utils import *
 
 # Auxiliary functions:
 
-def comment_html(request, comment):
+def comment_html(macro, request, comment):
     _ = request.getText
+    datetime_fmt = get_cfg(macro, 'datetime_fmt', '%Y.%m.%d %H:%M')
     return '''<table>
     <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
     <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
@@ -57,7 +58,7 @@ def comment_html(request, comment):
     'name': _('Name:'),
     'comment_name': comment['user_name'],
     'time': _('Time:'),
-    'comment_time': comment['time'].strftime('%Y.%m.%d %H:%M'),
+    'comment_time': comment['time'].strftime(datetime_fmt),
     'comment_text': '<p>'.join( comment['comment'].split('\n') ),
     }
 
@@ -101,7 +102,6 @@ def macro_Comments(macro, page_name=u''):
     _ = macro.request.getText
     request = macro.request
     formatter = macro.formatter
-
 
     # By default show the comments for the current page
     if page_name == u'':
@@ -150,7 +150,7 @@ def macro_Comments(macro, page_name=u''):
         comments = [ read_comment(Xi) for Xi in files]
 
         for comment in comments:
-            html.append( u"%s" % comment_html(request, comment ) )
+            html.append( u"%s" % comment_html(macro, request, comment ) )
 
         if cmt_per_page:
             html.append(navbar(request, page_number, max_pages, page_uri))
