@@ -50,17 +50,20 @@ from comment_utils import *
 def comment_html(macro, request, comment):
     _ = request.getText
     datetime_fmt = get_cfg(macro, 'datetime_fmt', '%Y.%m.%d %H:%M')
-    return '''
+    default_template = '''
         <div class="comment_username">
             <span class="comment_name">%(comment_name)s</span> 
             <span class="comment_time">%(comment_time)s</span>
         </div>
         <div class="comment_posting"">%(comment_text)s</div>
-        ''' % {
-            'name': _('Name:'),
+        '''
+    comment_template = get_cfg(macro, 'comment_template', default_template)
+    return comment_template % {
+            'label_name': _('Name'),
             'comment_name': comment['user_name'],
-            'time': _('Time:'),
+            'label_time': _('Time'),
             'comment_time': comment['time'].strftime(datetime_fmt),
+            'label_text': _('Comment'),
             'comment_text': '<p>'.join( comment['comment'].split('\n') ),
             }
 
