@@ -50,17 +50,19 @@ from comment_utils import *
 def comment_html(macro, request, comment):
     _ = request.getText
     datetime_fmt = get_cfg(macro, 'datetime_fmt', '%Y.%m.%d %H:%M')
-    return '''<table>
-    <tr><td>%(name)s</td><td>%(comment_name)s</td></tr>
-    <tr><td>%(time)s</td><td>%(comment_time)s</td></tr>
-    <tr><td colspan=2>%(comment_text)s</td></tr>
-    </table>''' % {
-    'name': _('Name:'),
-    'comment_name': comment['user_name'],
-    'time': _('Time:'),
-    'comment_time': comment['time'].strftime(datetime_fmt),
-    'comment_text': '<p>'.join( comment['comment'].split('\n') ),
-    }
+    return '''
+        <div class="comment_username">
+            <span class="comment_name">%(comment_name)s</span> 
+            <span class="comment_time">%(comment_time)s</span>
+        </div>
+        <div class="comment_posting"">%(comment_text)s</div>
+        ''' % {
+            'name': _('Name:'),
+            'comment_name': comment['user_name'],
+            'time': _('Time:'),
+            'comment_time': comment['time'].strftime(datetime_fmt),
+            'comment_text': '<p>'.join( comment['comment'].split('\n') ),
+            }
 
 def navbar(request, page_number, max_pages, page_uri):
     _ = request.getText
@@ -118,7 +120,7 @@ def macro_Comments(macro, page_name=u''):
     # Compose the comments markup
     html = [u'<a name="comment_section"></a>']
     if not files:
-        html.append(u'<p>%s</p>' % _('There are no comments'))
+        html.append(u'<p>%s</p>' % _('No comments so far... you should be the first!'))
     else:
         # Pagination
         cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page',50)
