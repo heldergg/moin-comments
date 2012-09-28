@@ -134,7 +134,10 @@ class AddComment:
             return
 
         if get_cfg(self.macro, 'comment_recaptcha', False ) and not self.passpartout:
-            import captcha
+            try:
+                import captcha
+            except ImportError:
+                import recaptcha.client.captcha as captcha
             self.captcha = captcha.submit (
                 get_input(self.macro, 'recaptcha_challenge_field'),
                 get_input(self.macro, 'recaptcha_response_field'),
