@@ -45,6 +45,11 @@ from string import letters, digits
 import platform
 import os
 
+# Necessary to check the recaptcha response
+import urllib
+import urllib2
+import json
+
 from comment_utils import get_cfg, get_input, write_comment, notify_subscribers
 
 # Auxiliary class:
@@ -122,7 +127,7 @@ class AddComment:
             errors.append(_('Maximum number of characters is 10240.'))
 
         if (get_cfg(self.macro, 'comment_recaptcha', False) and not self.passpartout
-                and not self.captcha.is_valid):
+                and not self.captcha_is_valid):
             errors.append(
                 _("I'm not sure you're human! Please fill in the captcha."))
 
@@ -136,15 +141,18 @@ class AddComment:
             return
 
         if get_cfg(self.macro, 'comment_recaptcha', False) and not self.passpartout:
-            try:
-                import captcha
-            except ImportError:
-                import recaptcha.client.captcha as captcha
-            self.captcha = captcha.submit(
-                get_input(self.macro, 'recaptcha_challenge_field'),
-                get_input(self.macro, 'recaptcha_response_field'),
-                get_cfg(self.macro, 'comment_recaptcha_private_key'),
-                self.macro.request.remote_addr)
+            self.captcha_is_valid = False
+            url = 'https://www.google.com/recaptcha/api/siteverify'
+            values = {
+                    'secret': get_cfg(self.macro, 'comment_recaptcha_private_key'),
+                    'response': get_input(self.macro, 'g-recaptcha-response'),
+                    'remoteip': self.macro.request.remote_addr,
+                    }
+            data = urllib.urlencode(values)
+            req = urllib2.Request(url, data)
+            response = urllib2.urlopen(req)
+            result = json.load(response)
+            self.captcha_is_valid = result['success']
 
         self.get_comment()
         self.errors = self.errors_check()
@@ -199,7 +207,9 @@ class AddComment:
                     sendmail.sendmail(self.macro.request, moderators.split(','),
                                       _('New comment awaits moderation for page %(page)s' %
                                         self.comment),
-                                      _('New comment awaits moderation:\n\nPage: %(page)s\nFrom: %(user_name)s\nMessage:\n\n%(comment)s\n\n--' %
+                                      _('New comment awaits moderation:\n\n'
+                                        'Page: %(page)s\nFrom: %(user_name)s'
+                                        '\nMessage:\n\n%(comment)s\n\n--' %
                                         self.comment))
             else:
                 # Send notification to page subscribers if the page
@@ -213,7 +223,12 @@ class AddComment:
         Generate the comment form
         """
         _ = self.macro.request.getText
-        html = u'''<div class="comments_form">
+        html = u'<div class="comments_form">'
+
+        if get_cfg(self.macro, 'comment_recaptcha', False) and not self.passpartout:
+            html += '<script src="https://www.google.com/recaptcha/api.js" async defer></script>\n'
+
+        html += u'''
         <form method="POST" action="%(page_uri)s">
         <input type="hidden" name="do" value="comment_add">
         <table>''' % { 'page_uri': self.macro.request.request.url }
@@ -259,14 +274,12 @@ class AddComment:
             html += u'</ul></div></td></tr>'
 
         if get_cfg(self.macro, 'comment_recaptcha', False) and not self.passpartout:
-            import captcha
             html += u"""
             <tr>
                 <th>%(recaptcha_label)s</th>
-                <td>%(recaptcha)s</td>
+                <td><div class="g-recaptcha" data-sitekey="%(recaptcha)s"></div></td>
             </tr>""" % {
-                'recaptcha': captcha.displayhtml(
-                    get_cfg(self.macro, 'comment_recaptcha_public_key')),
+                'recaptcha': get_cfg(self.macro, 'comment_recaptcha_public_key'),
                 'recaptcha_label': _('Are you human?')}
 
         html += """
