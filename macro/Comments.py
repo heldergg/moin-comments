@@ -1,28 +1,26 @@
 # -*- coding: utf-8 -*-
 
 # Moin-comments - Blog like comments in MoinMoin
-# Copyright (C) 2009 José Lopes
+# Copyright (C) 2009, 2017 José Lopes
 
-## This file is part of Moin-comments.
-##
-## Moin-comments is free software: you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation, either version 3 of the License, or
-## (at your option) any later version.
-##
-## Moin-comments is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
-## You should have received a copy of the GNU General Public License
-## along with Moin-comments.  If not, see <http://www.gnu.org/licenses/>.
+# This file is part of Moin-comments.
+#
+# Moin-comments is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Moin-comments is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Moin-comments.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# José Lopes <jose.lopes@paxjulia.com>
-# Helder Guerreiro <helder@paxjulia.com>
-#
-# $Id$
+# José Lopes <jose.lopes@tretas.org>
+# Helder Guerreiro <helder@tretas.org>
 #
 
 """
@@ -43,29 +41,31 @@ import glob
 from MoinMoin.Page import Page
 
 # Utils
-from comment_utils import *
+from comment_utils import get_cfg, get_cfg_int, get_input_int, read_comment
 
 # Auxiliary functions:
+
 
 def comment_html(macro, request, comment):
     _ = request.getText
     datetime_fmt = get_cfg(macro, 'datetime_fmt', '%Y.%m.%d %H:%M')
     default_template = '''
         <div class="comment_username">
-            <span class="comment_name">%(comment_name)s</span> 
+            <span class="comment_name">%(comment_name)s</span>
             <span class="comment_time">%(comment_time)s</span>
         </div>
         <div class="comment_posting"">%(comment_text)s</div>
         '''
     comment_template = get_cfg(macro, 'comment_template', default_template)
     return comment_template % {
-            'label_name': _('Name'),
-            'comment_name': comment['user_name'],
-            'label_time': _('Time'),
-            'comment_time': comment['time'].strftime(datetime_fmt),
-            'label_text': _('Comment'),
-            'comment_text': '<p>'.join( comment['comment'].split('\n') ),
-            }
+        'label_name': _('Name'),
+        'comment_name': comment['user_name'],
+        'label_time': _('Time'),
+        'comment_time': comment['time'].strftime(datetime_fmt),
+        'label_text': _('Comment'),
+        'comment_text': '<p>'.join(comment['comment'].split('\n')),
+    }
+
 
 def navbar(request, page_number, max_pages, page_uri):
     _ = request.getText
@@ -77,22 +77,23 @@ def navbar(request, page_number, max_pages, page_uri):
     if page_number > 1:
         html.append('<div class="prevcmt">')
         html.append('<a href="%s">%s</a>&nbsp;&nbsp;' %
-                (page_uri,_('|&lt;')))
+                    (page_uri, _('|&lt;')))
         html.append('<a href="%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
-                (page_uri,page_number-1,_('&lt;&lt;')))
+                    (page_uri, page_number - 1, _('&lt;&lt;')))
         html.append('</div>')
 
     if page_number < max_pages:
         html.append('<div class="nextcmt">')
         html.append('<a href="%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
-                (page_uri,page_number+1,_('&gt;&gt;')))
+                    (page_uri, page_number + 1, _('&gt;&gt;')))
         html.append('<a href="%s?page_number=%d">%s</a>&nbsp;&nbsp;' %
-                (page_uri,max_pages,_('&gt;|')))
+                    (page_uri, max_pages, _('&gt;|')))
         html.append('</div>')
 
     html.append('</div>')
 
     return '\n'.join(html)
+
 
 def macro_Comments(macro, page_name=u''):
     '''
@@ -113,20 +114,21 @@ def macro_Comments(macro, page_name=u''):
         page_name = macro.formatter.page.page_name
 
     # Get the configuration:
-    page = Page(request, page_name )
+    page = Page(request, page_name)
     comments_dir = page.getPagePath("comments", check_create=1)
 
     # Get the page_name comment list
-    files = glob.glob(os.path.join(comments_dir,'*.txt'))
+    files = glob.glob(os.path.join(comments_dir, '*.txt'))
     files.sort()
 
     # Compose the comments markup
     html = [u'<a name="comment_section"></a>']
     if not files:
-        html.append(u'<p>%s</p>' % _('No comments so far... you should be the first!'))
+        html.append(u'<p>%s</p>' %
+                    _('No comments so far... you should be the first!'))
     else:
         # Pagination
-        cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page',50)
+        cmt_per_page = get_cfg_int(macro, 'comment_cmt_per_page', 50)
 
         if cmt_per_page:
             page_uri = request.url.split('?')[0]
@@ -138,7 +140,7 @@ def macro_Comments(macro, page_name=u''):
                 offset = 0
             max_pages = number_messages / cmt_per_page + offset
             try:
-                page_number = get_input_int(macro, 'page_number', 1 )
+                page_number = get_input_int(macro, 'page_number', 1)
             except ValueError:
                 page_number = 1
             if page_number > max_pages:
@@ -147,15 +149,15 @@ def macro_Comments(macro, page_name=u''):
                 page_number = 1
 
             first = (page_number - 1) * cmt_per_page
-            last  = first + cmt_per_page
+            last = first + cmt_per_page
 
             files = files[first:last]
 
         # Get the comments contents
-        comments = [ read_comment(Xi) for Xi in files]
+        comments = [read_comment(Xi) for Xi in files]
 
         for comment in comments:
-            html.append( u"%s" % comment_html(macro, request, comment ) )
+            html.append(u"%s" % comment_html(macro, request, comment))
 
         if cmt_per_page:
             html.append(navbar(request, page_number, max_pages, page_uri))

@@ -1,44 +1,44 @@
 # -*- coding: utf-8 -*-
 
 # Moin-comments - Blog like comments in MoinMoin
-# Copyright (C) 2009 José Lopes
+# Copyright (C) 2009, 2017 José Lopes
 
-## This file is part of Moin-comments.
-##
-## Moin-comments is free software: you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation, either version 3 of the License, or
-## (at your option) any later version.
-##
-## Moin-comments is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
-## You should have received a copy of the GNU General Public License
-## along with Moin-comments.  If not, see <http://www.gnu.org/licenses/>.
+# This file is part of Moin-comments.
+#
+# Moin-comments is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Moin-comments is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Moin-comments.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# José Lopes <jose.lopes@paxjulia.com>
-# Helder Guerreiro <helder@paxjulia.com>
-#
-# $Id$
+# José Lopes <jose.lopes@tretas.org>
+# Helder Guerreiro <helder@tretas.org>
 #
 
 """
 Comments Administration Macro
 """
 # General imports:
-import os
 import glob
 
 # MoinMoin imports:
-from MoinMoin import user, wikiutil
+from MoinMoin import wikiutil
 from MoinMoin.Page import Page
 
-from comment_utils import *
+from comment_utils import get_cfg
 
-class ApproveError(Exception): pass
+
+class ApproveError(Exception):
+    pass
+
 
 def macro_CommentsAdmin(macro):
     '''
@@ -55,13 +55,14 @@ def macro_CommentsAdmin(macro):
     _ = macro.request.getText
 
     # Configuration:
-    page_name = unicode(get_cfg(macro, 'comment_approval_page',
+    page_name = unicode(get_cfg(
+        macro, 'comment_approval_page',
         'CommentsApproval'))
-    page = Page(request,page_name)
+    page = Page(request, page_name)
 
     if not page.exists():
         raise ApproveError('You have to create the approval page! (%s)' % (
-                page_name))
+            page_name))
     approval_dir = page.getPagePath('', check_create=0)
     approval_url = wikiutil.quoteWikinameURL(page_name)
 
@@ -79,5 +80,3 @@ def macro_CommentsAdmin(macro):
         return formatter.rawHTML(html)
     except:
         return formatter.escapedText('')
-
-
