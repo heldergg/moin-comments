@@ -8,23 +8,23 @@ This idea isn't new but we could not find an exact implementation of page commen
 
 On this project we define a series of actions and macros that together provide the described functionality. For the user, the actions usage is transparent, he will only have to care of the macros:
 
-* **<<AddComment>>** - This macro will display a comment input form. The user input is escaped so if the user types some markup it will not produce any effect;
+* `<<AddComment>>` - This macro will display a comment input form. The user input is escaped so if the user types some markup it will not produce any effect;
 
-* **<<ApproveComments>>** - This macro should be placed on the page defined in the configuration variable `comment_approval_page`. The comments are temporally stored on this page. A site administrator must moderate the comments;
+* `<<ApproveComments>>` - This macro should be placed on the page defined in the configuration variable `comment_approval_page`. The comments are temporally stored on this page. A site administrator must moderate the comments;
 
-* **<<CommentsAdmin>>** - this is an optional macro, it will display how many comments are waiting for moderation - only to the wiki administrators;
+* `<<CommentsAdmin>>` - this is an optional macro, it will display how many comments are waiting for moderation - only to the wiki administrators;
 
-* **<<Comments( PAGE )>>** - This will display the comments available in page `PAGE`.
+* `<<Comments(PAGE)>>` - This will display the comments available in page `PAGE`.
 
 ## Adding and displaying comments
 
 For each page where we want to have comments available, we must have at a minimum the AddComment macro somewhere on the page, usually at the end, before the Comments macro:
 
-{{{
+```
 <<AddComment>>
 ----
 <<Comments(@PAGE@)>>
-}}}
+```
 
 This can be placed on the appropriate templates, to automatize the process.
 
