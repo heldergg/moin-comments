@@ -28,8 +28,5 @@ values shown):
     comment_recaptcha = False
     comment_recaptcha_public_key = None
     comment_recaptcha_private_key = None
-    comment_recaptcha_use_ssl = False
 
-To have reCAPTCHA support the reCAPTCHA client library (for python) is needed.
-Right now I'm upgrading the code to use reCaptcha V2. Stay tunned.
-
+To support reCAPTCHA you must register your site in [Google's reCAPTCHA site](https://www.google.com/recaptcha/admin) to get the public/secret key pair.
